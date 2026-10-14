@@ -1,0 +1,13 @@
+.git
+.github
+.gitignore
+.dockerignore
+nas-panel
+*.db
+*.db-journal
+frontend/node_modules
+frontend/dist
+dist
+brain
+.system_generated
+.gemini

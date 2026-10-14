@@ -1,0 +1,17 @@
+services:
+  home-nas-panel:
+    build: .
+    image: evalexp/home-nas-panel:latest
+    container_name: home-nas-panel
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=8080
+      - DB_PATH=/app/data/nas_panel.db
+      - TZ=Asia/Shanghai
+      - WEBAUTHN_RP_NAME=Home NAS Panel
+      # - WEBAUTHN_RP_ID=nas.local # 若使用自定义内网域名访问请配置，默认自动提取
+      # - JWT_SECRET=your-custom-jwt-secret # 自定义 JWT 密钥（留空则启动时自动生成 256 位安全随机密钥）
