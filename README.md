@@ -1,5 +1,8 @@
 # Home NAS Panel (家庭 NAS 控制面板)
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/evalexp/home-nas-panel)](https://goreportcard.com/report/github.com/evalexp/home-nas-panel)
+[![License](https://img.shields.io/github/license/evalexp/home-nas-panel)](LICENSE)
+
 基于 **Go (Gin) + SQLite + React 19 + Tailwind CSS + PWA** 构建的高性能家庭控制面板。为家庭私有云环境量身打造，聚合常用内网服务卡片导航、Proxmox VE 宿主机与虚拟机管控、OpenWrt 远程网络唤醒（WOL）以及 Passkey 免密生物识别登录。
 
 ---
@@ -21,6 +24,8 @@
 - **多设备管理**：集中管理局域网所有支持网络唤醒的物理机器，记录机器名称与网卡 MAC 地址，支持一键开机唤醒与 MAC 快捷复制。
 - **自定义 HTTP 报文模板**：支持配置控制网关域名/IP、端口、TLS 状态与证书跳过，支持直接上传原始 HTTP 报文模板（使用 `{mac}` 作为物理地址占位符，以原生 UTF-8 字节读取并支持回车换行等不可见字符可视化核验预览）。
 - **PVE 宿主机联动绑定**：在系统设置的 PVE 配置中可直接从 WOL 设备列表中选择绑定宿主机，实现状态页一键开机唤醒。
+
+> 建议使用 [https://github.com/evalexp/openwrt-wol-webhook](https://github.com/evalexp/openwrt-wol-webhook)
 
 ### 4. 现代安全认证 (Passkey & Password)
 - **WebAuthn / FIDO2 生物识别**：支持 MacBook Touch ID、Windows Hello、iPhone Face ID/Touch ID 以及 KeePassXC、1Password 等通用 Passkey 管理器一键免密秒级登录。
