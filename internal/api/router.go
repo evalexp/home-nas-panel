@@ -73,12 +73,17 @@ func SetupRouter(
 				pve.POST("/guests/:type/:vmid/:action", pveH.ControlGuest)
 			}
 
-			// Wake-on-LAN Webhook
+			// WOL Control & Devices
 			wol := protected.Group("/wol")
 			{
 				wol.GET("/config", wolH.GetConfig)
 				wol.POST("/config", wolH.SaveConfig)
 				wol.DELETE("/config", wolH.DeleteConfig)
+				wol.GET("/devices", wolH.ListDevices)
+				wol.POST("/devices", wolH.CreateDevice)
+				wol.PUT("/devices/:id", wolH.UpdateDevice)
+				wol.DELETE("/devices/:id", wolH.DeleteDevice)
+				wol.POST("/devices/:id/wake", wolH.WakeDevice)
 				wol.POST("/wake", wolH.TriggerWake)
 			}
 

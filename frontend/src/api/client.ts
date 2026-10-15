@@ -86,7 +86,30 @@ export interface PVEOnlineStatus {
   node: string
   pveConfigured: boolean
   wolConfigured: boolean
+  wolDeviceBound?: boolean
+  wolDeviceId?: number | null
+  wolDeviceName?: string
+  wolDeviceMac?: string
   wolUrl?: string
+}
+
+export interface WOLDevice {
+  id: number
+  name: string
+  mac: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface WOLConfig {
+  configured: boolean
+  host?: string
+  port?: number
+  useTls?: boolean
+  tlsSkipVerify?: boolean
+  packetTemplate?: string
+  enabled?: boolean
+  updatedAt?: string
 }
 
 export interface PVEGuest {
@@ -266,20 +289,22 @@ export const api = {
   },
 
   wol: {
-    getConfig: () =>
-      request<{
-        configured: boolean
-        webhookUrl: string
-        insecureSkipVerify?: boolean
-        enabled?: boolean
-        updatedAt?: string
-      }>('/wol/config'),
-    saveConfig: (data: { webhookUrl: string; insecureSkipVerify?: boolean }) =>
+    getConfig: () => request<WOLConfig>('/wol/config'),
+    saveConfig: (data: {
+      host: string
+      port: number
+      useTls: boolean
+      tlsSkipVerify: boolean
+      packetTemplate?: string
+    }) =>
       request<{
         message: string
         configured: boolean
-        webhookUrl: string
-        insecureSkipVerify?: boolean
+        host: string
+        port: number
+        useTls: boolean
+        tlsSkipVerify: boolean
+        packetTemplate: string
         updatedAt?: string
       }>('/wol/config', {
         method: 'POST',
@@ -289,10 +314,29 @@ export const api = {
       request<{ message: string }>('/wol/config', {
         method: 'DELETE',
       }),
-    wake: (webhookUrl?: string, insecureSkipVerify?: boolean) =>
+    getDevices: () => request<WOLDevice[]>('/wol/devices'),
+    createDevice: (data: { name: string; mac: string }) =>
+      request<WOLDevice>('/wol/devices', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    updateDevice: (id: number, data: { name: string; mac: string }) =>
+      request<WOLDevice>(`/wol/devices/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    deleteDevice: (id: number) =>
+      request<{ message: string }>(`/wol/devices/${id}`, {
+        method: 'DELETE',
+      }),
+    wakeDevice: (id: number) =>
+      request<{ message: string; mac?: string }>(`/wol/devices/${id}/wake`, {
+        method: 'POST',
+      }),
+    wake: (data?: { deviceId?: number; mac?: string }) =>
       request<{ message: string; mac?: string }>('/wol/wake', {
         method: 'POST',
-        body: JSON.stringify({ webhookUrl, insecureSkipVerify }),
+        body: JSON.stringify(data || {}),
       }),
   },
 }

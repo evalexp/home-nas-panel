@@ -10,6 +10,7 @@ type PVEConfig struct {
 	TokenSecret        string    `gorm:"not null" json:"tokenSecret"` // e.g. uuid
 	InsecureSkipVerify bool      `json:"insecureSkipVerify"`       // allow self-signed certs
 	DefaultNode        string    `json:"defaultNode"`              // default node name (e.g. pve)
+	WOLDeviceID        *uint     `json:"wolDeviceId"`              // bound WOL Device ID
 	Enabled            bool      `gorm:"default:true" json:"enabled"`
 	UpdatedAt          time.Time `json:"updatedAt"`
 }

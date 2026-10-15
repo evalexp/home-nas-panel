@@ -10,11 +10,12 @@ import {
   Menu,
   X,
   ChevronRight,
+  Zap,
 } from 'lucide-react'
 import { User } from '../api/client'
 import { PVEStatusBadge } from './PVEStatusBadge'
 
-export type TabType = 'nav' | 'pve' | 'setting'
+export type TabType = 'nav' | 'pve' | 'wol' | 'setting'
 
 interface NavbarProps {
   user: User | null
@@ -118,6 +119,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Activity className="w-3.5 h-3.5" />
               <span>PVE Status</span>
+            </button>
+
+            <button
+              onClick={() => handleTabClick('wol')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                currentTab === 'wol'
+                  ? 'bg-slate-800 text-amber-400 shadow-sm border border-slate-700/80'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>WOL Control</span>
             </button>
 
             <button
@@ -263,6 +276,27 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Activity className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0 font-bold text-sm">PVE Status</div>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
+
+              <button
+                onClick={() => handleTabClick('wol')}
+                className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left text-xs font-semibold transition-all cursor-pointer ${
+                  currentTab === 'wol'
+                    ? 'bg-amber-500/15 border border-amber-500/35 text-amber-300 shadow-sm shadow-amber-500/10'
+                    : 'text-slate-300 hover:bg-slate-800/80 hover:text-white border border-transparent'
+                }`}
+              >
+                <div
+                  className={`p-2 rounded-xl ${
+                    currentTab === 'wol'
+                      ? 'bg-amber-500/20 text-amber-300'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0 font-bold text-sm">WOL Control</div>
                 <ChevronRight className="w-4 h-4 text-slate-500" />
               </button>
 

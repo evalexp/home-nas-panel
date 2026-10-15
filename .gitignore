@@ -12,6 +12,7 @@ bin/
 *.db-journal
 *.db-wal
 *.db-shm
+*.bak
 
 # Frontend
 frontend/node_modules/

@@ -2,19 +2,18 @@ import React, { useState, useEffect } from 'react'
 import {
   Server,
   Zap,
-  KeyRound,
-  ShieldCheck,
   CheckCircle,
   AlertTriangle,
   RefreshCw,
-  Plus,
   Trash2,
-  Check,
   Fingerprint,
-  Link,
-  Laptop,
+  ChevronDown,
+  ChevronUp,
+  Code2,
+  RotateCcw,
 } from 'lucide-react'
-import { api, User } from '../api/client'
+import { api, User, WOLDevice, WOLConfig } from '../api/client'
+import { WOLPacketTemplateSection } from '../components/WOLPacketTemplateSection'
 
 interface SettingPageProps {
   user: User | null
@@ -28,20 +27,21 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
   const [pveTokenSecret, setPveTokenSecret] = useState('')
   const [detectedNode, setDetectedNode] = useState('')
   const [pveInsecure, setPveInsecure] = useState(true)
+  const [pveWolDeviceId, setPveWolDeviceId] = useState<number | null>(null)
   const [pveLoading, setPveLoading] = useState(false)
   const [pveTestSuccess, setPveTestSuccess] = useState('')
   const [pveError, setPveError] = useState('')
 
-  // WOL Configuration State
-  const [wolUrl, setWolUrl] = useState('')
-  const [wolInsecure, setWolInsecure] = useState(false)
-  const [wolConfig, setWolConfig] = useState<{
-    configured: boolean
-    webhookUrl: string
-    insecureSkipVerify?: boolean
-    enabled?: boolean
-    updatedAt?: string
-  } | null>(null)
+  // WOL Devices (for PVE binding selection)
+  const [wolDevices, setWolDevices] = useState<WOLDevice[]>([])
+
+  // WOL Control Configuration State
+  const [wolHost, setWolHost] = useState('192.168.1.1')
+  const [wolPort, setWolPort] = useState<number>(80)
+  const [wolUseTls, setWolUseTls] = useState(false)
+  const [wolTlsSkipVerify, setWolTlsSkipVerify] = useState(false)
+  const [wolPacketTemplate, setWolPacketTemplate] = useState('')
+  const [wolConfig, setWolConfig] = useState<WOLConfig | null>(null)
   const [wolLoading, setWolLoading] = useState(false)
   const [wolSuccess, setWolSuccess] = useState('')
   const [wolError, setWolError] = useState('')
@@ -52,14 +52,35 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
   const [passkeyMsg, setPasskeyMsg] = useState('')
   const [passkeyErr, setPasskeyErr] = useState('')
 
+  const generateDefaultTemplate = (host: string, port: number, useTls: boolean) => {
+    const h = host.trim() || '192.168.1.1'
+    const p = port || (useTls ? 443 : 80)
+    const hostHeader = (!useTls && p === 80) || (useTls && p === 443) ? h : `${h}:${p}`
+    return `GET /wakeup?token=REPLACE_YOUR_TOKEN_HERE&mac={mac} HTTP/1.1\r\nHost: ${hostHeader}\r\nUser-Agent: HomeNASPanel-WOL/1.0\r\nConnection: close\r\n\r\n`
+  }
+
   const loadWolConfig = async () => {
     try {
       const cfg = await api.wol.getConfig()
       setWolConfig(cfg)
       if (cfg.configured) {
-        if (cfg.webhookUrl) setWolUrl(cfg.webhookUrl)
-        setWolInsecure(cfg.insecureSkipVerify ?? false)
+        if (cfg.host) setWolHost(cfg.host)
+        if (cfg.port) setWolPort(cfg.port)
+        setWolUseTls(cfg.useTls ?? false)
+        setWolTlsSkipVerify(cfg.tlsSkipVerify ?? false)
+        if (cfg.packetTemplate) setWolPacketTemplate(cfg.packetTemplate)
+      } else {
+        if (!wolPacketTemplate) {
+          setWolPacketTemplate(generateDefaultTemplate('192.168.1.1', 80, false))
+        }
       }
+    } catch {}
+  }
+
+  const loadWolDevices = async () => {
+    try {
+      const devs = await api.wol.getDevices()
+      setWolDevices(devs || [])
     } catch {}
   }
 
@@ -73,53 +94,38 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
           setPveTokenId(cfg.tokenId || '')
           setDetectedNode(cfg.defaultNode || '')
           setPveInsecure(cfg.insecureSkipVerify ?? true)
+          setPveWolDeviceId(cfg.wolDeviceId ?? null)
         }
       })
       .catch(() => {})
 
-    // Load existing WOL configuration
+    // Load WOL configuration and devices
     loadWolConfig()
+    loadWolDevices()
   }, [])
 
-  const handleSaveWol = async (e: React.FormEvent) => {
+  const handleSavePVE = async (e: React.FormEvent) => {
     e.preventDefault()
-    setWolLoading(true)
-    setWolError('')
-    setWolSuccess('')
+    setPveLoading(true)
+    setPveError('')
+    setPveTestSuccess('')
     try {
-      const res = await api.wol.saveConfig({
-        webhookUrl: wolUrl,
-        insecureSkipVerify: wolInsecure,
+      const res = await api.pve.saveConfig({
+        endpoint: pveEndpoint,
+        tokenId: pveTokenId,
+        tokenSecret: pveTokenSecret,
+        insecureSkipVerify: pveInsecure,
+        wolDeviceId: pveWolDeviceId,
+        enabled: true,
       })
-      setWolSuccess(res.message || '开机 Webhook 配置已保存')
-      setWolConfig({
-        configured: true,
-        webhookUrl: wolUrl,
-        insecureSkipVerify: wolInsecure,
-        updatedAt: res.updatedAt,
-      })
+      if (res.detectedNode) {
+        setDetectedNode(res.detectedNode)
+      }
+      setPveTestSuccess(`✅ PVE 配置已成功保存！自动绑定主节点: ${res.detectedNode || 'pve'}`)
     } catch (err: any) {
-      setWolError(err.message || '保存失败')
+      setPveError(err.message || '保存配置失败')
     } finally {
-      setWolLoading(false)
-    }
-  }
-
-  const handleDeleteWol = async () => {
-    if (!window.confirm('确定要删除已保存的开机 Webhook 配置吗？')) return
-    setWolLoading(true)
-    setWolError('')
-    setWolSuccess('')
-    try {
-      const res = await api.wol.deleteConfig()
-      setWolConfig({ configured: false, webhookUrl: '' })
-      setWolUrl('')
-      setWolInsecure(false)
-      setWolSuccess(res.message || '开机 Webhook 配置已成功删除')
-    } catch (err: any) {
-      setWolError(err.message || '删除配置失败')
-    } finally {
-      setWolLoading(false)
+      setPveLoading(false)
     }
   }
 
@@ -146,28 +152,67 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
     }
   }
 
-  // Save PVE Config
-  const handleSavePVE = async (e: React.FormEvent) => {
+  // Save WOL Control configuration
+  const handleSaveWol = async (e: React.FormEvent) => {
     e.preventDefault()
-    setPveLoading(true)
-    setPveError('')
-    setPveTestSuccess('')
+    setWolLoading(true)
+    setWolError('')
+    setWolSuccess('')
+
+    const host = wolHost.trim()
+    if (!host) {
+      setWolError('请输入有效的域名或 IP 地址')
+      setWolLoading(false)
+      return
+    }
+
+    const templateToSave = wolPacketTemplate.length > 0 ? wolPacketTemplate : generateDefaultTemplate(host, wolPort, wolUseTls)
+
     try {
-      const res = await api.pve.saveConfig({
-        endpoint: pveEndpoint,
-        tokenId: pveTokenId,
-        tokenSecret: pveTokenSecret,
-        insecureSkipVerify: pveInsecure,
-        enabled: true,
+      const res = await api.wol.saveConfig({
+        host: host,
+        port: Number(wolPort) || (wolUseTls ? 443 : 80),
+        useTls: wolUseTls,
+        tlsSkipVerify: wolTlsSkipVerify,
+        packetTemplate: templateToSave,
       })
-      if (res.detectedNode) {
-        setDetectedNode(res.detectedNode)
-      }
-      setPveTestSuccess(`✅ PVE 配置已成功保存！自动绑定主节点: ${res.detectedNode || 'pve'}`)
+      setWolSuccess(res.message || 'WOL Control 配置已成功保存')
+      setWolConfig({
+        configured: true,
+        host: host,
+        port: Number(wolPort) || (wolUseTls ? 443 : 80),
+        useTls: wolUseTls,
+        tlsSkipVerify: wolTlsSkipVerify,
+        packetTemplate: templateToSave,
+        updatedAt: res.updatedAt,
+      })
+      setWolPacketTemplate(templateToSave)
     } catch (err: any) {
-      setPveError(err.message || '保存配置失败')
+      setWolError(err.message || '保存 WOL 配置失败')
     } finally {
-      setPveLoading(false)
+      setWolLoading(false)
+    }
+  }
+
+  // Delete WOL Control configuration
+  const handleDeleteWol = async () => {
+    if (!window.confirm('确定要删除已保存的 WOL Control 配置吗？')) return
+    setWolLoading(true)
+    setWolError('')
+    setWolSuccess('')
+    try {
+      const res = await api.wol.deleteConfig()
+      setWolConfig({ configured: false })
+      setWolHost('192.168.1.1')
+      setWolPort(80)
+      setWolUseTls(false)
+      setWolTlsSkipVerify(false)
+      setWolPacketTemplate(generateDefaultTemplate('192.168.1.1', 80, false))
+      setWolSuccess(res.message || 'WOL Control 配置已成功删除')
+    } catch (err: any) {
+      setWolError(err.message || '删除配置失败')
+    } finally {
+      setWolLoading(false)
     }
   }
 
@@ -216,7 +261,7 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
           <div>
             <h3 className="text-lg font-bold text-white">Proxmox VE (PVE) 节点配置</h3>
             <p className="text-xs text-slate-400">
-              配置 PVE 服务器地址与 API Token，控制台将通过此凭证远程读取状态与下发关机指令
+              配置 PVE 服务器地址与 API Token，控制台将通过此凭证远程读取状态与下发指令
             </p>
           </div>
         </div>
@@ -279,6 +324,34 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
             </div>
           </div>
 
+          {/* Bound WOL Device Selection */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              WOL 绑定设备 (唤醒 PVE 宿主机所使用的 MAC 地址)
+            </label>
+            <select
+              value={pveWolDeviceId ?? ''}
+              onChange={(e) => setPveWolDeviceId(e.target.value ? Number(e.target.value) : null)}
+              className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500"
+            >
+              <option value="">未绑定设备 (请在 WOL 设备中选择)</option>
+              {wolDevices.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name} ({d.mac})
+                </option>
+              ))}
+            </select>
+            {wolDevices.length === 0 ? (
+              <p className="text-[11px] text-amber-400 mt-1">
+                暂无可绑定的 WOL 设备，请在「WOL Control」页面中先添加机器。
+              </p>
+            ) : (
+              <p className="text-[11px] text-slate-400 mt-1">
+                设置绑定后，PVE 状态页的“开机 (WOL)”将直接下发此设备的物理 MAC 地址进行网络唤醒。
+              </p>
+            )}
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-800/50 rounded-2xl border border-slate-800">
             <div className="flex items-center gap-2">
               <input
@@ -323,17 +396,17 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
         </form>
       </div>
 
-      {/* 2. Wake-on-LAN Webhook Configuration */}
+      {/* 2. WOL Control Configuration (Wake-on-LAN) */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-between gap-3 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Zap className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">开机 Webhook 配置 (WOL)</h3>
+              <h3 className="text-lg font-bold text-white">WOL Control 配置 (Wake-on-LAN)</h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                通过向 OpenWrt 发送 Webhook 请求触发网络唤醒 (Wake-on-LAN) 启动物理宿主机
+                配置局域网网络唤醒控制网关的通信参数与 HTTP 报文模板
               </p>
             </div>
           </div>
@@ -371,38 +444,95 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
         )}
 
         <form onSubmit={handleSaveWol} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Webhook 唤醒地址 (URL)
-            </label>
-            <input
-              type="url"
-              value={wolUrl}
-              onChange={(e) => {
-                setWolUrl(e.target.value)
-                setWolSuccess('')
-                setWolError('')
-              }}
-              placeholder="http://192.168.1.1:8080/wakeup?mac=aa:bb:cc:dd:ee:ff&token=..."
-              required
-              className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500 font-mono"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                域名或 IP 地址 <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={wolHost}
+                onChange={(e) => {
+                  setWolHost(e.target.value)
+                  setWolSuccess('')
+                  setWolError('')
+                }}
+                placeholder="例如: 192.168.1.1 或 router.lan"
+                required
+                className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                端口 <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="number"
+                value={wolPort}
+                onChange={(e) => setWolPort(Number(e.target.value))}
+                placeholder="80"
+                required
+                min={1}
+                max={65535}
+                className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
+              />
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-800/50 rounded-2xl border border-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 bg-slate-800/50 rounded-2xl border border-slate-800">
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id="wolInsecureTLS"
-                checked={wolInsecure}
-                onChange={(e) => setWolInsecure(e.target.checked)}
-                className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 cursor-pointer"
+                id="wolUseTLS"
+                checked={wolUseTls}
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  setWolUseTls(checked)
+                  if (checked && wolPort === 80) {
+                    setWolPort(443)
+                  } else if (!checked && wolPort === 443) {
+                    setWolPort(80)
+                  }
+                }}
+                className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer"
               />
-              <label htmlFor="wolInsecureTLS" className="text-xs text-slate-300 cursor-pointer">
-                允许自签名证书 (Insecure TLS，用于 HTTPS 自签名证书)
+              <label htmlFor="wolUseTLS" className="text-xs text-slate-300 cursor-pointer">
+                启用 TLS 加密连接 (HTTPS)
+              </label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="wolTlsSkipVerify"
+                checked={wolTlsSkipVerify}
+                onChange={(e) => setWolTlsSkipVerify(e.target.checked)}
+                disabled={!wolUseTls}
+                className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer disabled:opacity-40"
+              />
+              <label
+                htmlFor="wolTlsSkipVerify"
+                className={`text-xs cursor-pointer ${
+                  wolUseTls ? 'text-slate-300' : 'text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                启用 TLS 时跳过证书检验 (允许自签名证书)
               </label>
             </div>
           </div>
+
+          {/* WOL Packet Template Upload & Visualizer Section */}
+          <WOLPacketTemplateSection
+            value={wolPacketTemplate}
+            onChange={setWolPacketTemplate}
+            host={wolHost}
+            port={Number(wolPort) || (wolUseTls ? 443 : 80)}
+            useTls={wolUseTls}
+            onResetDefault={() =>
+              setWolPacketTemplate(generateDefaultTemplate(wolHost, wolPort, wolUseTls))
+            }
+          />
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
             {wolConfig?.configured && (
@@ -419,10 +549,10 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
             <button
               type="submit"
               disabled={wolLoading}
-              className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 rounded-xl text-xs font-bold shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
             >
               {wolLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-              <span>保存 Webhook 配置</span>
+              <span>保存 WOL 配置</span>
             </button>
           </div>
         </form>
@@ -435,80 +565,84 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
             <Fingerprint className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Passkey 生物识别与安全管理</h3>
+            <h3 className="text-lg font-bold text-white">通行密钥 (Passkey) 管理</h3>
             <p className="text-xs text-slate-400">
-              管理已授权的 Touch ID、Face ID 或硬件安全密钥凭证
+              通过系统级生物识别（Touch ID、Face ID 或 Windows Hello）安全无密登录控制面板
             </p>
           </div>
         </div>
 
         {passkeyErr && (
-          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs">
-            {passkeyErr}
+          <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{passkeyErr}</span>
           </div>
         )}
 
         {passkeyMsg && (
-          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs">
-            {passkeyMsg}
+          <div className="mb-5 p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 shrink-0" />
+            <span>{passkeyMsg}</span>
           </div>
         )}
 
-        {/* Existing Passkeys List */}
-        <div className="space-y-2.5 mb-6">
-          <label className="block text-xs font-semibold text-slate-300">已绑定的设备凭证</label>
-          {!user?.passkeys || user.passkeys.length === 0 ? (
-            <div className="p-4 rounded-2xl bg-slate-800/40 border border-slate-700/60 text-center">
-              <p className="text-xs text-slate-400">尚未绑定任何 Passkey 凭证</p>
-            </div>
-          ) : (
-            user.passkeys.map((pk) => (
-              <div
-                key={pk.id}
-                className="flex items-center justify-between p-3.5 bg-slate-800/60 border border-slate-700 rounded-2xl"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-slate-700/60 text-cyan-400">
-                    <Laptop className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-slate-200">{pk.deviceName}</div>
-                    <div className="text-[11px] text-slate-400">
-                      创建时间: {new Date(pk.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleDeletePasskey(pk.id)}
-                  className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer"
-                  title="删除此凭证"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Enroll New Passkey */}
-        <div className="pt-4 border-t border-slate-800 space-y-2">
-          <label className="block text-xs font-semibold text-slate-300">为当前设备新增凭证</label>
-          <div className="flex gap-2">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               value={newPasskeyName}
               onChange={(e) => setNewPasskeyName(e.target.value)}
-              placeholder="设备备注 (例如 iPhone Face ID)"
-              className="flex-1 px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-cyan-500"
+              placeholder="自定义凭证名称 (例如: MacBook Pro 指纹)"
+              className="flex-1 px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500"
             />
             <button
               onClick={handleEnrollPasskey}
               disabled={passkeyLoading}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+              className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <Plus className="w-4 h-4" />
-              <span>{passkeyLoading ? '等待验证...' : '绑定当前设备'}</span>
+              <Fingerprint className="w-4 h-4" />
+              <span>{passkeyLoading ? '正在唤起验证...' : '注册新 Passkey'}</span>
             </button>
+          </div>
+
+          {/* Bound Passkeys List */}
+          <div className="pt-4 border-t border-slate-800/80">
+            <h4 className="text-xs font-semibold text-slate-400 mb-3">已绑定的通行密钥</h4>
+            {user?.passkeys && user.passkeys.length > 0 ? (
+              <div className="space-y-2.5">
+                {user.passkeys.map((pk) => (
+                  <div
+                    key={pk.id}
+                    className="flex items-center justify-between p-3.5 bg-slate-800/40 border border-slate-800 rounded-2xl"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
+                        <Fingerprint className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">{pk.deviceName}</div>
+                        <div className="text-[10px] text-slate-500">
+                          注册时间: {new Date(pk.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleDeletePasskey(pk.id)}
+                      className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                      title="删除此凭证"
+                      aria-label="删除此凭证"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-slate-500 p-4 bg-slate-800/20 rounded-2xl text-center border border-slate-800/40">
+                尚未绑定通行密钥，建议添加当前设备以便快捷登录
+              </div>
+            )}
           </div>
         </div>
       </div>

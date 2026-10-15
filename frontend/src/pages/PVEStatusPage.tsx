@@ -116,7 +116,7 @@ export const PVEStatusPage: React.FC = () => {
     try {
       const res = await api.pve.start()
       setConfirmPowerOn(false)
-      setActionSuccess(res?.message || '已成功向 OpenWrt WOL Webhook 发送唤醒指令！')
+      setActionSuccess(res?.message || '已成功向绑定的 WOL 设备发送网络唤醒指令！')
       setStatus((prev: any) => (prev ? { ...prev, status: 'booting' } : { status: 'booting' }))
       setTimeout(() => fetchData(true), 2500)
     } catch (err: any) {
@@ -286,8 +286,10 @@ export const PVEStatusPage: React.FC = () => {
               disabled={!onlineStatus?.wolConfigured || actionLoading}
               title={
                 !onlineStatus?.wolConfigured
-                  ? '需先在设置中配置开机 Webhook (WOL)'
-                  : '通过 OpenWrt WOL Webhook 远程唤醒物理宿主机'
+                  ? !onlineStatus?.wolDeviceBound
+                    ? '需先在设置的 PVE 配置中绑定 WOL 设备'
+                    : '需先在设置中配置 WOL 控制参数'
+                  : `通过 WOL 控制唤醒物理宿主机 (${onlineStatus?.wolDeviceName || '已绑定设备'})`
               }
               className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-95 text-emerald-400 rounded-xl text-xs font-bold border border-emerald-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-lg shadow-emerald-500/10"
             >
@@ -352,12 +354,18 @@ export const PVEStatusPage: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">确认唤醒 PVE 宿主机？</h3>
-                <p className="text-xs text-slate-400">唤醒方式: OpenWrt WOL Webhook (Wake-on-LAN)</p>
+                <p className="text-xs text-slate-400">唤醒方式: WOL 控制报文 (Wake-on-LAN)</p>
               </div>
             </div>
 
-            <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed mb-4">
-              <p>系统将向配置的 OpenWrt Webhook 发送唤醒指令，通过网络唤醒 (Wake-on-LAN) 启动物理宿主机。</p>
+            <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed mb-4 space-y-2">
+              <p>系统将向配置的局域网控制网关发送唤醒指令报文，通过网络唤醒 (Wake-on-LAN) 启动物理宿主机。</p>
+              {onlineStatus?.wolDeviceName && (
+                <div className="pt-2 border-t border-slate-700/50 flex items-center justify-between font-mono text-[11px]">
+                  <span className="text-slate-400">绑定设备: {onlineStatus.wolDeviceName}</span>
+                  <span className="text-cyan-400 font-bold">{onlineStatus.wolDeviceMac}</span>
+                </div>
+              )}
             </div>
 
             {modalError && (

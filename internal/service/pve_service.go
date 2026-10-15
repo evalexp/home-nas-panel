@@ -447,21 +447,35 @@ func (s *PVEService) StopGuest(nodeName string, guestType string, vmid int) erro
 
 // GetOnlineStatus computes overall PVE host online state and readiness
 func (s *PVEService) GetOnlineStatus(wolSvc *WOLService) map[string]interface{} {
-	// 1. WOL Webhook status
+	// 1. WOL status & bound device
 	wolConfigured := false
-	wolUrl := ""
+	wolDeviceBound := false
+	var wolDeviceId *uint
+	wolDeviceName := ""
+	wolDeviceMac := ""
+
 	if wolSvc != nil {
-		if wCfg, err := wolSvc.GetConfig(); err == nil && wCfg != nil && wCfg.WebhookURL != "" {
+		if wCfg, err := wolSvc.GetConfig(); err == nil && wCfg != nil && strings.TrimSpace(wCfg.Host) != "" {
 			wolConfigured = true
-			wolUrl = wCfg.WebhookURL
+		}
+	}
+
+	cfg, err := s.GetConfig()
+	pveConfigured := err == nil && cfg.Endpoint != "" && cfg.TokenID != ""
+	if pveConfigured && cfg.WOLDeviceID != nil && *cfg.WOLDeviceID > 0 {
+		wolDeviceId = cfg.WOLDeviceID
+		if wolSvc != nil {
+			if dev, err := wolSvc.GetDevice(*cfg.WOLDeviceID); err == nil && dev != nil {
+				wolDeviceBound = true
+				wolDeviceName = dev.Name
+				wolDeviceMac = dev.MAC
+			}
 		}
 	}
 
 	// 2. PVE Node status
 	pveOnline := false
 	nodeName := "pve"
-	cfg, err := s.GetConfig()
-	pveConfigured := err == nil && cfg.Endpoint != "" && cfg.TokenID != ""
 	if pveConfigured {
 		if cfg.DefaultNode != "" {
 			nodeName = cfg.DefaultNode
@@ -473,10 +487,32 @@ func (s *PVEService) GetOnlineStatus(wolSvc *WOLService) map[string]interface{} 
 	}
 
 	return map[string]interface{}{
-		"online":        pveOnline,
-		"node":          nodeName,
-		"pveConfigured": pveConfigured,
-		"wolConfigured": wolConfigured,
-		"wolUrl":        wolUrl,
+		"online":         pveOnline,
+		"node":           nodeName,
+		"pveConfigured":  pveConfigured,
+		"wolConfigured":  wolConfigured && wolDeviceBound,
+		"wolDeviceBound": wolDeviceBound,
+		"wolDeviceId":    wolDeviceId,
+		"wolDeviceName":  wolDeviceName,
+		"wolDeviceMac":   wolDeviceMac,
 	}
 }
+
+// WakePVE wakes up the PVE host using the bound WOL device
+func (s *PVEService) WakePVE(wolSvc *WOLService) (*WOLResponse, error) {
+	cfg, err := s.GetConfig()
+	if err != nil || cfg.Endpoint == "" {
+		return nil, errors.New("PVE 配置尚未初始化")
+	}
+
+	if cfg.WOLDeviceID == nil || *cfg.WOLDeviceID == 0 {
+		return nil, errors.New("PVE 节点尚未绑定 WOL 设备，请在系统设置的 PVE 配置中选择绑定的 WOL 设备")
+	}
+
+	if wolSvc == nil {
+		return nil, errors.New("WOL 服务不可用")
+	}
+
+	return wolSvc.WakeDevice(*cfg.WOLDeviceID)
+}
+

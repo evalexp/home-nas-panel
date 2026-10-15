@@ -45,6 +45,7 @@ func (h *PVEHandler) GetConfig(c *gin.Context) {
 		"tokenSecret":        maskedSecret,
 		"insecureSkipVerify": cfg.InsecureSkipVerify,
 		"defaultNode":        cfg.DefaultNode,
+		"wolDeviceId":        cfg.WOLDeviceID,
 		"enabled":            cfg.Enabled,
 		"updatedAt":          cfg.UpdatedAt,
 	})
@@ -57,11 +58,20 @@ func (h *PVEHandler) SaveConfig(c *gin.Context) {
 		TokenID            string `json:"tokenId" binding:"required"`
 		TokenSecret        string `json:"tokenSecret"`
 		InsecureSkipVerify bool   `json:"insecureSkipVerify"`
+		WOLDeviceID        *uint  `json:"wolDeviceId"`
 		Enabled            bool   `json:"enabled"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误，请提供完整的 PVE 地址与 Token ID"})
 		return
+	}
+
+	// Validate bound WOL device if provided
+	if req.WOLDeviceID != nil && *req.WOLDeviceID > 0 {
+		if _, err := h.wolSvc.GetDevice(*req.WOLDeviceID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "所选的 WOL 绑定设备不存在"})
+			return
+		}
 	}
 
 	// Normalize endpoint
@@ -86,6 +96,7 @@ func (h *PVEHandler) SaveConfig(c *gin.Context) {
 		TokenID:            req.TokenID,
 		TokenSecret:        secret,
 		InsecureSkipVerify: req.InsecureSkipVerify,
+		WOLDeviceID:        req.WOLDeviceID,
 		Enabled:            req.Enabled,
 	}
 
@@ -312,9 +323,9 @@ func (h *PVEHandler) GetOnlineStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, state)
 }
 
-// Wake triggers OpenWrt WOL Webhook to wake up host (Power on)
+// Wake triggers WOL to wake up PVE host via bound WOL device (Power on)
 func (h *PVEHandler) Wake(c *gin.Context) {
-	res, err := h.wolSvc.TriggerWake()
+	res, err := h.pveSvc.WakePVE(h.wolSvc)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -322,7 +333,7 @@ func (h *PVEHandler) Wake(c *gin.Context) {
 
 	msg := res.Message
 	if msg == "" {
-		msg = "已成功向 OpenWrt WOL Webhook 发送唤醒指令！"
+		msg = "已成功向绑定的 WOL 设备发送唤醒指令！"
 	}
 
 	c.JSON(http.StatusOK, gin.H{

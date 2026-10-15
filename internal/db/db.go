@@ -29,6 +29,7 @@ func InitDB(dbPath string) (*gorm.DB, error) {
 		&model.NavIcon{},
 		&model.NavItem{},
 		&model.WOLConfig{},
+		&model.WOLDevice{},
 	)
 	if err != nil {
 		return nil, err

@@ -17,9 +17,10 @@
 - **宿主机电源安全操作**：提供带有防误触二次确认弹窗的宿主机安全关机与重启。
 - **顶栏状态实时徽标**：右上角提供呼吸灯状态徽标（在线/停机），支持 10 秒静默后台轮询与点击即时刷新。
 
-### 3. OpenWrt WOL 远程网络唤醒 (Wake-on-LAN)
-- **物理机一键拉起**：当 PVE 宿主机处于关机状态时，通过配置的 OpenWrt WOL Webhook 发起网络唤醒（标准 HTTP GET 查询参数调用），唤醒冷机。
-- **TLS 证书跳过**：支持 HTTPS 自签名证书环境（Insecure TLS）。
+### 3. WOL 控制中心与局域网网络唤醒 (WOL Control)
+- **多设备管理**：集中管理局域网所有支持网络唤醒的物理机器，记录机器名称与网卡 MAC 地址，支持一键开机唤醒与 MAC 快捷复制。
+- **自定义 HTTP 报文模板**：支持配置控制网关域名/IP、端口、TLS 状态与证书跳过，支持直接上传原始 HTTP 报文模板（使用 `{mac}` 作为物理地址占位符，以原生 UTF-8 字节读取并支持回车换行等不可见字符可视化核验预览）。
+- **PVE 宿主机联动绑定**：在系统设置的 PVE 配置中可直接从 WOL 设备列表中选择绑定宿主机，实现状态页一键开机唤醒。
 
 ### 4. 现代安全认证 (Passkey & Password)
 - **WebAuthn / FIDO2 生物识别**：支持 MacBook Touch ID、Windows Hello、iPhone Face ID/Touch ID 以及 KeePassXC、1Password 等通用 Passkey 管理器一键免密秒级登录。

@@ -3,6 +3,7 @@ import { Navbar, TabType } from './components/Navbar'
 import { LoginPage } from './pages/LoginPage'
 import { NavigationPage } from './pages/NavigationPage'
 import { PVEStatusPage } from './pages/PVEStatusPage'
+import { WOLControlPage } from './pages/WOLControlPage'
 import { SettingPage } from './pages/SettingPage'
 import { api, getToken, User } from './api/client'
 
@@ -73,6 +74,9 @@ export const App: React.FC = () => {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {currentTab === 'nav' && <NavigationPage />}
         {currentTab === 'pve' && <PVEStatusPage />}
+        {currentTab === 'wol' && (
+          <WOLControlPage onNavigateToSetting={() => setCurrentTab('setting')} />
+        )}
         {currentTab === 'setting' && (
           <SettingPage
             user={user}
