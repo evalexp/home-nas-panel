@@ -35,7 +35,8 @@ import {
   GripVertical,
   Copy,
 } from 'lucide-react'
-import { api, NavItem, NavIcon } from '../api/client'
+import { api, NavItem, NavIconMetadata } from '../api/client'
+import { NavIconImage } from '../components/NavIconImage'
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Globe,
@@ -186,8 +187,18 @@ export const processDataUrlToSquare = (dataUrl: string, size = 160): Promise<str
 
 export const NavigationPage: React.FC = () => {
   const [items, setItems] = useState<NavItem[]>([])
-  const [customIcons, setCustomIcons] = useState<NavIcon[]>([])
-  const [loading, setLoading] = useState(false)
+  const [customIcons, setCustomIcons] = useState<NavIconMetadata[]>([])
+  const [loading, setLoading] = useState(true)
+  const [pendingChanges, setPendingChanges] = useState(0)
+  const [loadError, setLoadError] = useState('')
+  const [iconsLoading, setIconsLoading] = useState(false)
+  const [iconsError, setIconsError] = useState('')
+  const [iconsLoaded, setIconsLoaded] = useState(false)
+  const [libraryRetry, setLibraryRetry] = useState(0)
+  const [iconRefreshKey, setIconRefreshKey] = useState(0)
+  const [iconSeeds, setIconSeeds] = useState<Record<number, string>>({})
+  const requestSequence = useRef(0)
+  const librarySequence = useRef(0)
   const [search, setSearch] = useState('')
 
   // Add / Edit Modal state
@@ -243,25 +254,80 @@ export const NavigationPage: React.FC = () => {
     position: 'before' | 'after'
   } | null>(null)
 
-  const fetchData = async () => {
+  const beginNavigationChange = () => {
+    requestSequence.current++
+    setPendingChanges((count) => count + 1)
+    setLoading(false)
+    setLoadError('')
+  }
+
+  const finishNavigationChange = () => setPendingChanges((count) => count - 1)
+
+  const fetchData = async (refresh = false) => {
+    const sequence = ++requestSequence.current
     setLoading(true)
+    setLoadError('')
     try {
-      const [itemList, iconList] = await Promise.all([
-        api.nav.list(),
-        api.nav.listIcons(),
-      ])
-      setItems(itemList)
-      setCustomIcons(iconList)
-    } catch {
-      // ignore
+      const itemList = await api.nav.list(refresh)
+      if (sequence !== requestSequence.current) return
+      if (refresh) {
+        const ids = [...new Set(itemList.flatMap((item) => item.iconId ? [item.iconId] : []))]
+        const results = await Promise.allSettled(ids.map((id) => api.nav.getIcon(id, true)))
+        if (sequence !== requestSequence.current) return
+        const seeds: Record<number, string> = {}
+        results.forEach((result) => {
+          if (result.status === 'fulfilled') seeds[result.value.id] = result.value.data
+        })
+        setIconSeeds(seeds)
+        setIconRefreshKey((version) => version + 1)
+        if (results.some((result) => result.status === 'rejected')) {
+          setLoadError('卡片已更新，部分图标刷新失败，请重试')
+        }
+        if (iconsLoaded) {
+          try {
+            const icons = await api.nav.listIcons(true)
+            if (sequence !== requestSequence.current) return
+            setCustomIcons(icons)
+          } catch {
+            if (sequence === requestSequence.current) setLoadError('卡片已更新，图标库列表刷新失败，请重试')
+          }
+        }
+      }
+      if (sequence === requestSequence.current) setItems(itemList)
+    } catch (err) {
+      if (sequence === requestSequence.current) {
+        setLoadError(err instanceof Error ? err.message : '导航加载失败，请重试')
+      }
     } finally {
-      setLoading(false)
+      if (sequence === requestSequence.current) setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchData()
+    void fetchData()
+    return () => { requestSequence.current++ }
   }, [])
+
+  useEffect(() => {
+    if (!showModal || iconTab !== 'library') return
+    const sequence = ++librarySequence.current
+    let active = true
+    setIconsLoading(true)
+    setIconsError('')
+    api.nav.listIcons().then((icons) => {
+      if (active && sequence === librarySequence.current) {
+        setCustomIcons(icons)
+        setIconsLoaded(true)
+      }
+    }).catch((err) => {
+      if (active && sequence === librarySequence.current) {
+        setIconsError(err instanceof Error ? err.message : '图标库加载失败')
+      }
+    }).finally(() => {
+      if (active && sequence === librarySequence.current) setIconsLoading(false)
+    })
+    return () => { active = false }
+  }, [showModal, iconTab, libraryRetry])
 
   // Dismiss context menu on window events
   useEffect(() => {
@@ -352,7 +418,10 @@ export const NavigationPage: React.FC = () => {
         data: dataUrl,
       })
 
-      // Update local icons library
+      // Update local icons library and preview without downloading the uploaded data again.
+      librarySequence.current++
+      setIconsLoading(false)
+      setIconSeeds((prev) => ({ ...prev, [createdIcon.id]: createdIcon.data }))
       setCustomIcons((prev) => [createdIcon, ...prev])
 
       // Auto-select this newly created icon
@@ -405,7 +474,10 @@ export const NavigationPage: React.FC = () => {
         data: previewIcon.data,
       })
 
-      // Update local icons library
+      // Update local icons library and preview without downloading the uploaded data again.
+      librarySequence.current++
+      setIconsLoading(false)
+      setIconSeeds((prev) => ({ ...prev, [createdIcon.id]: createdIcon.data }))
       setCustomIcons((prev) => [createdIcon, ...prev])
 
       // Auto-select this newly created icon
@@ -427,9 +499,17 @@ export const NavigationPage: React.FC = () => {
   const handleDeleteCustomIcon = async (e: React.MouseEvent, iconId: number) => {
     e.stopPropagation()
     if (!confirm('确定从图标库中删除该图标？已绑定该图标的书签将恢复为默认图标。')) return
+    beginNavigationChange()
 
     try {
       await api.nav.deleteIcon(iconId)
+      librarySequence.current++
+      setIconsLoading(false)
+      setIconSeeds((prev) => {
+        const next = { ...prev }
+        delete next[iconId]
+        return next
+      })
       setCustomIcons((prev) => prev.filter((i) => i.id !== iconId))
       if (selectedIconId === iconId) {
         setSelectedIconId(null)
@@ -441,6 +521,8 @@ export const NavigationPage: React.FC = () => {
       setItems(freshItems)
     } catch (err: any) {
       alert(err.message || '删除图标失败')
+    } finally {
+      finishNavigationChange()
     }
   }
 
@@ -455,6 +537,7 @@ export const NavigationPage: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title || !url) return
+    beginNavigationChange()
 
     try {
       const targetCategory = category?.trim() || '常用'
@@ -539,17 +622,22 @@ export const NavigationPage: React.FC = () => {
       setItems(freshItems)
     } catch (err: any) {
       alert(err.message || '保存失败')
+    } finally {
+      finishNavigationChange()
     }
   }
 
   const handleDeleteItem = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation()
     if (!confirm('确定删除该导航书签？')) return
+    beginNavigationChange()
     try {
       await api.nav.delete(id)
       setItems((prev) => prev.filter((i) => i.id !== id))
     } catch (err: any) {
       alert(err.message || '删除失败')
+    } finally {
+      finishNavigationChange()
     }
   }
 
@@ -725,6 +813,7 @@ export const NavigationPage: React.FC = () => {
     }))
 
     // 5. Optimistic UI update
+    beginNavigationChange()
     setItems(reordered)
 
     // 6. Persist to backend
@@ -739,6 +828,8 @@ export const NavigationPage: React.FC = () => {
       console.error('保存分组排序失败:', err)
       const fresh = await api.nav.list()
       setItems(fresh)
+    } finally {
+      finishNavigationChange()
     }
   }
 
@@ -798,6 +889,7 @@ export const NavigationPage: React.FC = () => {
     }))
 
     // Optimistic UI update
+    beginNavigationChange()
     setItems(reordered)
 
     // Persist to backend
@@ -812,6 +904,8 @@ export const NavigationPage: React.FC = () => {
       console.error('保存排序失败:', err)
       const fresh = await api.nav.list()
       setItems(fresh)
+    } finally {
+      finishNavigationChange()
     }
   }
 
@@ -861,11 +955,22 @@ export const NavigationPage: React.FC = () => {
 
   // Helper to render the enlarged uniform icon badge for an item
   const renderItemBadge = (item: NavItem) => {
-    const customData = item.customIcon?.data || (isCustomImageData(item.icon) ? item.icon : null)
+    const customData = isCustomImageData(item.icon) ? item.icon : null
+    const IconComp = ICON_MAP[item.icon] || Globe
+    const fallback = <IconComp className="w-7 h-7 sm:w-8 sm:h-8 pointer-events-none select-none" />
 
     return (
       <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center group-hover:scale-105 group-hover:bg-cyan-500/20 transition-all overflow-hidden shrink-0 shadow-md shadow-cyan-500/5 p-2.5 pointer-events-none select-none">
-        {customData ? (
+        {item.iconId ? (
+          <NavIconImage
+            iconId={item.iconId}
+            alt={item.title}
+            refreshKey={iconRefreshKey}
+            initialData={iconSeeds[item.iconId]}
+            className="w-full h-full object-contain drop-shadow-sm select-none pointer-events-none"
+            fallback={fallback}
+          />
+        ) : customData ? (
           <img
             src={customData}
             alt={item.title}
@@ -873,37 +978,26 @@ export const NavigationPage: React.FC = () => {
             draggable={false}
             loading="lazy"
           />
-        ) : (
-          (() => {
-            const IconComp = ICON_MAP[item.icon] || Globe
-            return <IconComp className="w-7 h-7 sm:w-8 sm:h-8 pointer-events-none select-none" />
-          })()
-        )}
+        ) : fallback}
       </div>
     )
   }
 
   // Helper to render the live preview icon in the modal
   const renderModalPreviewIcon = () => {
-    if (selectedIconId) {
-      const matched = customIcons.find((i) => i.id === selectedIconId)
-      if (matched && matched.data) {
-        return (
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center overflow-hidden shrink-0 shadow-md shadow-cyan-500/5 p-2.5">
-            <img
-              src={matched.data}
-              alt="图标预览"
-              className="w-full h-full object-contain drop-shadow-sm select-none"
-            />
-          </div>
-        )
-      }
-    }
-
     const IconComp = ICON_MAP[selectedPresetIcon] || Globe
     return (
       <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center overflow-hidden shrink-0 shadow-md shadow-cyan-500/5 p-2.5">
-        <IconComp className="w-7 h-7 sm:w-8 sm:h-8" />
+        {selectedIconId ? (
+          <NavIconImage
+            iconId={selectedIconId}
+            alt="图标预览"
+            refreshKey={iconRefreshKey}
+            initialData={iconSeeds[selectedIconId]}
+            className="w-full h-full object-contain drop-shadow-sm select-none"
+            fallback={<Globe className="w-7 h-7 sm:w-8 sm:h-8" />}
+          />
+        ) : <IconComp className="w-7 h-7 sm:w-8 sm:h-8" />}
       </div>
     )
   }
@@ -919,18 +1013,30 @@ export const NavigationPage: React.FC = () => {
           </h2>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Search box */}
-          <div className="relative">
+          <div className="relative flex-1 min-w-0 sm:flex-none">
             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="搜索服务或分类..."
-              className="pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 w-36 sm:w-52"
+              className="pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 w-full min-w-0 sm:w-52"
             />
           </div>
+
+          <button
+            type="button"
+            onClick={() => void fetchData(true)}
+            disabled={loading || pendingChanges > 0}
+            title="刷新导航"
+            aria-label="刷新导航"
+            aria-busy={loading}
+            className="flex items-center justify-center w-8 h-8 shrink-0 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
 
           <button
             onClick={() => handleOpenAdd()}
@@ -942,8 +1048,19 @@ export const NavigationPage: React.FC = () => {
         </div>
       </div>
 
+      {loadError && (
+        <div role="alert" className="flex items-center gap-2 p-3 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400 text-xs">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>{loadError}</span>
+        </div>
+      )}
+
       {/* Main Content: Grouped by Category (SunPanel Style) */}
-      {items.length === 0 ? (
+      {loading && items.length === 0 ? (
+        <div role="status" className="p-12 text-center text-xs text-slate-400">正在加载导航服务...</div>
+      ) : loadError && items.length === 0 ? (
+        <div className="p-12 text-center text-xs text-slate-400">点击右上角刷新按钮重试</div>
+      ) : items.length === 0 ? (
         /* Empty Database State */
         <div className="p-12 text-center rounded-3xl border border-dashed border-slate-800 bg-slate-900/40">
           <p className="text-xs text-slate-400 mb-4">暂无导航服务，点击下方按钮添加属于你的家庭服务</p>
@@ -1379,7 +1496,7 @@ export const NavigationPage: React.FC = () => {
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    图标库 ({customIcons.length})
+                    图标库{iconsLoaded ? ` (${customIcons.length})` : ''}
                   </button>
                   <button
                     type="button"
@@ -1438,7 +1555,14 @@ export const NavigationPage: React.FC = () => {
               {iconTab === 'library' && (
                 /* Uploaded Icons Library (Select & Reuse) */
                 <div className="p-3 bg-slate-950/50 border border-slate-800 rounded-2xl max-h-56 overflow-y-auto">
-                  {customIcons.length === 0 ? (
+                  {iconsError && (
+                    <div role="alert" className="mb-3 text-xs text-rose-400 flex items-center justify-between gap-2">
+                      <span>{iconsError}</span>
+                      <button type="button" onClick={() => setLibraryRetry((value) => value + 1)} className="text-cyan-400 cursor-pointer">重试</button>
+                    </div>
+                  )}
+                  {iconsLoading && <p role="status" className="text-center py-3 text-xs text-slate-400">正在加载图标库...</p>}
+                  {!iconsLoading && !iconsError && customIcons.length === 0 ? (
                     <div className="text-center py-6 text-slate-500 text-xs space-y-2">
                       <Library className="w-6 h-6 mx-auto opacity-50" />
                       <p>暂无已上传的自定义图标</p>
@@ -1468,10 +1592,13 @@ export const NavigationPage: React.FC = () => {
                             }`}
                           >
                             <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center overflow-hidden shrink-0">
-                              <img
-                                src={ic.data}
+                              <NavIconImage
+                                iconId={ic.id}
                                 alt={ic.name}
+                                refreshKey={iconRefreshKey}
+                                initialData={iconSeeds[ic.id]}
                                 className="w-full h-full object-contain p-1"
+                                fallback={<ImageIcon className="w-4 h-4 text-slate-400" />}
                               />
                             </div>
 

@@ -1,4 +1,5 @@
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser'
+import { clearNavigationCache } from './navCache'
 
 const API_BASE = '/api'
 
@@ -6,12 +7,52 @@ export function getToken(): string | null {
   return localStorage.getItem('token')
 }
 
+function discardSessionCache(token: string | null) {
+  navigationReads.clear()
+  navigationRevision++
+  void clearNavigationCache(token).catch((error) => console.warn('无法清理导航缓存', error))
+}
+
 export function setToken(token: string) {
+  const previous = getToken()
   localStorage.setItem('token', token)
+  if (previous !== token) discardSessionCache(previous)
 }
 
 export function removeToken() {
+  const previous = getToken()
   localStorage.removeItem('token')
+  discardSessionCache(previous)
+}
+
+// Share only in-flight reads. Persistent freshness is owned by the Service Worker.
+const navigationReads = new Map<string, Promise<unknown>>()
+let navigationRevision = 0
+
+function navigationRead<T>(path: string, refresh = false): Promise<T> {
+  const token = getToken()
+  const key = `${token}:${path}`
+  const pending = navigationReads.get(key)
+  if (pending && !refresh) return pending as Promise<T>
+  const revision = navigationRevision
+  const promise = request<T>(path, { cache: refresh ? 'reload' : 'no-cache' }).then((data) => {
+    if (getToken() !== token || navigationRevision !== revision) throw new Error('导航数据已更改，请重试')
+    return data
+  })
+  navigationReads.set(key, promise)
+  void promise.finally(() => {
+    if (navigationReads.get(key) === promise) navigationReads.delete(key)
+  }).catch(() => {})
+  return promise
+}
+
+async function navigationWrite<T = any>(path: string, options: RequestInit): Promise<T> {
+  try {
+    return await request<T>(path, options)
+  } finally {
+    navigationRevision++
+    navigationReads.clear()
+  }
 }
 
 export async function request<T = any>(path: string, options: RequestInit = {}): Promise<T> {
@@ -31,7 +72,7 @@ export async function request<T = any>(path: string, options: RequestInit = {}):
     headers,
   })
 
-  if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/status')) {
+  if (res.status === 401 && getToken() === token && !path.includes('/auth/login') && !path.includes('/auth/status')) {
     removeToken()
     window.location.reload()
   }
@@ -54,12 +95,15 @@ export interface User {
   }[]
 }
 
-export interface NavIcon {
+export interface NavIconMetadata {
   id: number
   name: string
-  data: string
   createdAt?: string
   updatedAt?: string
+}
+
+export interface NavIcon extends NavIconMetadata {
+  data: string
 }
 
 export interface FetchIconResult {
@@ -75,7 +119,6 @@ export interface NavItem {
   url: string
   icon: string
   iconId?: number | null
-  customIcon?: NavIcon | null
   category: string
   description: string
   orderIndex: number
@@ -204,32 +247,33 @@ export const api = {
   },
 
   nav: {
-    list: () => request<NavItem[]>('/nav'),
+    list: (refresh = false) => navigationRead<NavItem[]>('/nav', refresh),
     create: (data: Partial<NavItem>) =>
-      request<NavItem>('/nav', {
+      navigationWrite<NavItem>('/nav', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
     update: (id: number, data: Partial<NavItem>) =>
-      request<NavItem>(`/nav/${id}`, {
+      navigationWrite<NavItem>(`/nav/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
-    delete: (id: number) => request(`/nav/${id}`, { method: 'DELETE' }),
-    listIcons: () => request<NavIcon[]>('/nav/icons'),
+    delete: (id: number) => navigationWrite(`/nav/${id}`, { method: 'DELETE' }),
+    listIcons: (refresh = false) => navigationRead<NavIconMetadata[]>('/nav/icons', refresh),
+    getIcon: (id: number, refresh = false) => navigationRead<NavIcon>(`/nav/icons/${id}`, refresh),
     createIcon: (data: { name: string; data: string }) =>
-      request<NavIcon>('/nav/icons', {
+      navigationWrite<NavIcon>('/nav/icons', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    deleteIcon: (id: number) => request(`/nav/icons/${id}`, { method: 'DELETE' }),
+    deleteIcon: (id: number) => navigationWrite(`/nav/icons/${id}`, { method: 'DELETE' }),
     fetchIcon: (url: string) =>
       request<FetchIconResult>('/nav/icons/fetch', {
         method: 'POST',
         body: JSON.stringify({ url }),
       }),
     reorder: (items: { id: number; category: string; orderIndex: number }[]) =>
-      request('/nav/reorder', {
+      navigationWrite('/nav/reorder', {
         method: 'POST',
         body: JSON.stringify(items),
       }),

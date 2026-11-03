@@ -13,6 +13,9 @@
 - **分类服务卡片**：内网服务（Jellyfin、OpenWrt、qBittorrent、Portainer、Immich 等）分类分组展示与即点即达。
 - **图标自定义**：支持主流内置服务图标，并提供自定义 SVG / 图像图标上传与管理。
 - **自定义管理**：支持卡片增删改查、排序及分组筛选。
+- **按需图标与缓存**：导航列表只携带自定义图标 ID，图标内容按 ID 获取并复用；图标库在打开选择面板时加载。导航和图标库元数据缓存 7 天，图标内容缓存 30 天；本机增删改和排序后会自动失效相关缓存，其他设备上的修改可点击“导航中心”右侧刷新按钮立即同步。
+
+> 导航缓存使用 Service Worker，需要通过 HTTPS 或 `localhost` 访问，并使用生产构建。普通 `http://<NAS_IP>:8080` 或不支持 Service Worker 的浏览器仍可正常浏览和手动刷新，但不会启用持久缓存。缓存按登录会话隔离，退出登录时清理。
 
 ### 2. Proxmox VE 虚拟化管控 (PVE Management)
 - **实时资源监控**：通过官方 API Token 安全对接，直观展示 CPU 占用率、内存分配、硬盘使用以及运行时长。
@@ -112,6 +115,16 @@ npm run build
 ```bash
 go build -ldflags="-w -s" -o dist/nas-panel cmd/server/main.go
 ```
+
+### 导航缓存回归测试
+
+安装前端依赖后，在 `frontend` 目录执行：
+
+```bash
+npm run test:nav
+```
+
+测试会构建前端和 Go 后端，使用随机端口与临时数据库启动服务，并通过 Chromium 验证图标按需加载、缓存命中、强制刷新、写入失效、并发删除和登录会话清理，不会使用现有 NAS 数据库。需要本地 Go 工具链；Chromium 可通过 `npx playwright install chromium` 安装，Windows 下也会尝试使用已安装的 Chrome 或 Edge。可通过 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 指定浏览器路径。
 
 ### 构建 Docker 镜像
 ```bash

@@ -1,13 +1,16 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/evalexp/home-nas-panel/internal/model"
 	"github.com/evalexp/home-nas-panel/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type NavHandler struct {
@@ -18,13 +21,35 @@ func NewNavHandler(navSvc *service.NavService) *NavHandler {
 	return &NavHandler{navSvc: navSvc}
 }
 
+type navItemResponse struct {
+	ID          uint      `json:"id"`
+	Title       string    `json:"title"`
+	URL         string    `json:"url"`
+	Icon        string    `json:"icon"`
+	IconID      *uint     `json:"iconId"`
+	Category    string    `json:"category"`
+	Description string    `json:"description"`
+	OrderIndex  int       `json:"orderIndex"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
 func (h *NavHandler) List(c *gin.Context) {
 	items, err := h.navSvc.ListItems()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, items)
+	response := make([]navItemResponse, 0, len(items))
+	for _, item := range items {
+		response = append(response, navItemResponse{
+			ID: item.ID, Title: item.Title, URL: item.URL,
+			Icon: item.Icon, IconID: item.IconID, Category: item.Category,
+			Description: item.Description, OrderIndex: item.OrderIndex,
+			CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt,
+		})
+	}
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *NavHandler) Create(c *gin.Context) {
@@ -106,6 +131,25 @@ func (h *NavHandler) ListIcons(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, icons)
+}
+
+func (h *NavHandler) GetIcon(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil || id == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 ID"})
+		return
+	}
+
+	icon, err := h.navSvc.GetIcon(uint(id))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "图标不存在"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, icon)
 }
 
 func (h *NavHandler) CreateIcon(c *gin.Context) {

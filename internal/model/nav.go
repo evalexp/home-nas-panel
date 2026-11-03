@@ -11,15 +11,23 @@ type NavIcon struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+// NavIconMetadata describes an icon without its image data.
+type NavIconMetadata struct {
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 // NavItem represents a link or service in the NAS dashboard
 type NavItem struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
 	Title       string    `gorm:"not null" json:"title"`
 	URL         string    `gorm:"not null" json:"url"`
-	Icon        string    `json:"icon"`                  // Lucide preset icon name e.g. "Globe", "Server"
-	IconID      *uint     `json:"iconId"`                // Reference to reusable NavIcon
+	Icon        string    `json:"icon"`   // Lucide preset icon name e.g. "Globe", "Server"
+	IconID      *uint     `json:"iconId"` // Reference to reusable NavIcon
 	CustomIcon  *NavIcon  `gorm:"foreignKey:IconID" json:"customIcon,omitempty"`
-	Category    string    `json:"category"`              // e.g. "管理", "媒体", "网络", "下载"
+	Category    string    `json:"category"` // e.g. "管理", "媒体", "网络", "下载"
 	Description string    `json:"description"`
 	OrderIndex  int       `gorm:"default:0" json:"orderIndex"`
 	CreatedAt   time.Time `json:"createdAt"`

@@ -89,11 +89,22 @@ func TestFetchIconFromURL(t *testing.T) {
 }
 
 func TestReorderItems(t *testing.T) {
+	previousDB := db.DB
 	tmpDB := t.TempDir() + "/test.db"
-	_, err := db.InitDB(tmpDB)
+	database, err := db.InitDB(tmpDB)
 	if err != nil {
 		t.Fatalf("failed to init db: %v", err)
 	}
+	sqlDB, err := database.DB()
+	if err != nil {
+		t.Fatalf("failed to get sql db: %v", err)
+	}
+	t.Cleanup(func() {
+		db.DB = previousDB
+		if err := sqlDB.Close(); err != nil {
+			t.Errorf("close test database: %v", err)
+		}
+	})
 
 	svc := NewNavService()
 

@@ -23,10 +23,10 @@ func NewNavService() *NavService {
 	return &NavService{}
 }
 
-// ListItems returns all nav items with their associated custom icons preloaded
+// ListItems returns all nav items with custom icons referenced by ID only.
 func (s *NavService) ListItems() ([]model.NavItem, error) {
 	var items []model.NavItem
-	err := db.DB.Preload("CustomIcon").Order("order_index asc, id asc").Find(&items).Error
+	err := db.DB.Order("order_index asc, id asc").Find(&items).Error
 	return items, err
 }
 
@@ -79,10 +79,20 @@ func (s *NavService) ReorderItems(reqs []ReorderItemReq) error {
 
 // Custom Icons management
 
-func (s *NavService) ListIcons() ([]model.NavIcon, error) {
-	var icons []model.NavIcon
-	err := db.DB.Order("id desc").Find(&icons).Error
+func (s *NavService) ListIcons() ([]model.NavIconMetadata, error) {
+	var icons []model.NavIconMetadata
+	err := db.DB.Model(&model.NavIcon{}).
+		Select("id", "name", "created_at", "updated_at").
+		Order("id desc").Find(&icons).Error
 	return icons, err
+}
+
+func (s *NavService) GetIcon(id uint) (*model.NavIcon, error) {
+	var icon model.NavIcon
+	if err := db.DB.First(&icon, id).Error; err != nil {
+		return nil, err
+	}
+	return &icon, nil
 }
 
 func (s *NavService) CreateIcon(icon *model.NavIcon) error {

@@ -96,6 +96,7 @@ func SetupRouter(
 				nav.DELETE("/:id", navH.Delete)
 				nav.POST("/reorder", navH.Reorder)
 				nav.GET("/icons", navH.ListIcons)
+				nav.GET("/icons/:id", navH.GetIcon)
 				nav.POST("/icons", navH.CreateIcon)
 				nav.DELETE("/icons/:id", navH.DeleteIcon)
 				nav.POST("/icons/fetch", navH.FetchIcon)
