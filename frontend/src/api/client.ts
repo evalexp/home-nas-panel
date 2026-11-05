@@ -146,13 +146,18 @@ export interface WOLDevice {
 
 export interface WOLConfig {
   configured: boolean
-  host?: string
-  port?: number
-  useTls?: boolean
+  wakeUrl?: string
+  statusUrl?: string
   tlsSkipVerify?: boolean
-  packetTemplate?: string
   enabled?: boolean
   updatedAt?: string
+}
+
+export interface WOLDeviceStatus {
+  deviceId: number
+  status: 'online' | 'offline' | 'unknown'
+  error?: string
+  checkedAt?: string
 }
 
 export interface PVEGuest {
@@ -334,23 +339,8 @@ export const api = {
 
   wol: {
     getConfig: () => request<WOLConfig>('/wol/config'),
-    saveConfig: (data: {
-      host: string
-      port: number
-      useTls: boolean
-      tlsSkipVerify: boolean
-      packetTemplate?: string
-    }) =>
-      request<{
-        message: string
-        configured: boolean
-        host: string
-        port: number
-        useTls: boolean
-        tlsSkipVerify: boolean
-        packetTemplate: string
-        updatedAt?: string
-      }>('/wol/config', {
+    saveConfig: (data: { wakeUrl: string; statusUrl: string; tlsSkipVerify: boolean }) =>
+      request<WOLConfig & { message: string }>('/wol/config', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -359,6 +349,8 @@ export const api = {
         method: 'DELETE',
       }),
     getDevices: () => request<WOLDevice[]>('/wol/devices'),
+    getDeviceStatuses: (signal?: AbortSignal) =>
+      request<WOLDeviceStatus[]>('/wol/devices/status', { cache: 'no-store', signal }),
     createDevice: (data: { name: string; mac: string }) =>
       request<WOLDevice>('/wol/devices', {
         method: 'POST',

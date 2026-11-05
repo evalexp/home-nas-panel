@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,59 +22,55 @@ func NewWOLHandler(wolSvc *service.WOLService) *WOLHandler {
 // GetConfig returns current WOL Control configuration
 func (h *WOLHandler) GetConfig(c *gin.Context) {
 	cfg, err := h.wolSvc.GetConfig()
-	if err != nil || strings.TrimSpace(cfg.Host) == "" {
+	if err != nil || strings.TrimSpace(cfg.WakeURL) == "" {
 		c.JSON(http.StatusOK, gin.H{
-			"configured":     false,
-			"host":           "",
-			"port":           80,
-			"useTls":         false,
-			"tlsSkipVerify":  false,
-			"packetTemplate": service.FormatDefaultPacket("192.168.1.1", 80, false),
+			"configured":    false,
+			"wakeUrl":       "",
+			"statusUrl":     "",
+			"tlsSkipVerify": false,
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"configured":     true,
-		"host":           cfg.Host,
-		"port":           cfg.Port,
-		"useTls":         cfg.UseTLS,
-		"tlsSkipVerify":  cfg.TLSSkipVerify,
-		"packetTemplate": cfg.PacketTemplate,
-		"enabled":        cfg.Enabled,
-		"updatedAt":      cfg.UpdatedAt,
+		"configured":    true,
+		"wakeUrl":       cfg.WakeURL,
+		"statusUrl":     cfg.StatusURL,
+		"tlsSkipVerify": cfg.TLSSkipVerify,
+		"enabled":       cfg.Enabled,
+		"updatedAt":     cfg.UpdatedAt,
 	})
 }
 
 // SaveConfig updates WOL Control configuration
 func (h *WOLHandler) SaveConfig(c *gin.Context) {
 	var req struct {
-		Host           string `json:"host" binding:"required"`
-		Port           int    `json:"port"`
-		UseTLS         bool   `json:"useTls"`
-		TLSSkipVerify  bool   `json:"tlsSkipVerify"`
-		PacketTemplate string `json:"packetTemplate"`
+		WakeURL       string `json:"wakeUrl" binding:"required"`
+		StatusURL     string `json:"statusUrl" binding:"required"`
+		TLSSkipVerify bool   `json:"tlsSkipVerify"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请提供有效的域名或 IP 地址"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请提供唤醒和在线检测 Webhook URL"})
 		return
 	}
 
-	cfg, err := h.wolSvc.SaveConfig(req.Host, req.Port, req.UseTLS, req.TLSSkipVerify, req.PacketTemplate)
+	cfg, err := h.wolSvc.SaveConfig(req.WakeURL, req.StatusURL, req.TLSSkipVerify)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, service.ErrInvalidWOLConfig) {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":        "WOL Control 配置已成功保存",
-		"configured":     true,
-		"host":           cfg.Host,
-		"port":           cfg.Port,
-		"useTls":         cfg.UseTLS,
-		"tlsSkipVerify":  cfg.TLSSkipVerify,
-		"packetTemplate": cfg.PacketTemplate,
-		"updatedAt":      cfg.UpdatedAt,
+		"message":       "WOL Control 配置已成功保存",
+		"configured":    true,
+		"wakeUrl":       cfg.WakeURL,
+		"statusUrl":     cfg.StatusURL,
+		"tlsSkipVerify": cfg.TLSSkipVerify,
+		"updatedAt":     cfg.UpdatedAt,
 	})
 }
 
@@ -97,6 +94,17 @@ func (h *WOLHandler) ListDevices(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, devices)
+}
+
+// ListDeviceStatuses returns online checks independently from the device list.
+func (h *WOLHandler) ListDeviceStatuses(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	statuses, err := h.wolSvc.ListDeviceStatuses(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "获取设备在线状态失败"})
+		return
+	}
+	c.JSON(http.StatusOK, statuses)
 }
 
 // CreateDevice registers a new WOL device

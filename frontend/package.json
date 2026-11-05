@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test:nav": "npm run build && node --test tests/navigation-cache.test.mjs",
+    "test:wol": "npm run build && node --test tests/wol-control.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

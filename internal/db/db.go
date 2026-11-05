@@ -35,6 +35,14 @@ func InitDB(dbPath string) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	// v0.1.0 required webhook_url on every insert. The replacement URL fields
+	// are now in place, so remove that obsolete column and its NOT NULL constraint.
+	if database.Migrator().HasColumn(&model.WOLConfig{}, "webhook_url") {
+		if err := database.Exec("ALTER TABLE wol_configs DROP COLUMN webhook_url").Error; err != nil {
+			return nil, err
+		}
+	}
+
 	DB = database
 	log.Printf("SQLite database initialized at: %s", dbPath)
 	return DB, nil

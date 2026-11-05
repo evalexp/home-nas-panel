@@ -1,6 +1,5 @@
 # Home NAS Panel (家庭 NAS 控制面板)
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/evalexp/home-nas-panel)](https://goreportcard.com/report/github.com/evalexp/home-nas-panel)
 [![License](https://img.shields.io/github/license/evalexp/home-nas-panel)](LICENSE)
 
 基于 **Go (Gin) + SQLite + React 19 + Tailwind CSS + PWA** 构建的高性能家庭控制面板。为家庭私有云环境量身打造，聚合常用内网服务卡片导航、Proxmox VE 宿主机与虚拟机管控、OpenWrt 远程网络唤醒（WOL）以及 Passkey 免密生物识别登录。
@@ -25,10 +24,22 @@
 
 ### 3. WOL 控制中心与局域网网络唤醒 (WOL Control)
 - **多设备管理**：集中管理局域网所有支持网络唤醒的物理机器，记录机器名称与网卡 MAC 地址，支持一键开机唤醒与 MAC 快捷复制。
-- **自定义 HTTP 报文模板**：支持配置控制网关域名/IP、端口、TLS 状态与证书跳过，支持直接上传原始 HTTP 报文模板（使用 `{mac}` 作为物理地址占位符，以原生 UTF-8 字节读取并支持回车换行等不可见字符可视化核验预览）。
+- **GET Webhook 配置**：分别填写唤醒 URL 和在线检测 URL，每项仅需一个完整 URL，使用 `{mac}` 作为 MAC 地址占位符。通过 `http://` 或 `https://` 决定协议，保留默认关闭的“跳过 TLS 证书校验”设置，两个 HTTPS Webhook 共用此设置。
+- **设备在线状态**：桌面列表和手机卡片均显示在线、离线、检测中或检测失败。进入页面立即检测，每轮完成后 15 秒自动刷新；手动刷新列表和唤醒后立即重查。检测失败不会误报为离线。
 - **PVE 宿主机联动绑定**：在系统设置的 PVE 配置中可直接从 WOL 设备列表中选择绑定宿主机，实现状态页一键开机唤醒。
 
 > 建议使用 [https://github.com/evalexp/openwrt-wol-webhook](https://github.com/evalexp/openwrt-wol-webhook)
+
+配置示例（替换网关地址与 `YOUR_TOKEN`，保留 `{mac}`）：
+
+```text
+唤醒：http://router.lan:57820/wakeup?token=YOUR_TOKEN&mac={mac}
+在线检测：http://router.lan:57820/wakeup?token=YOUR_TOKEN&checkOnline={mac}
+```
+
+在线检测接口返回 JSON，例如 `{"success":true,"message":"Device online status checked","mac":"aa:bb:cc:dd:ee:ff","online":false}`。`online` 必须为布尔值；`true` 表示在线，`false` 表示离线。请求失败、HTTP 非 2xx、`success: false` 或响应缺少有效的 `online` 字段均显示检测失败。使用 OpenWrt 配套服务时，结果来自路由器的 IPv4 ARP 缓存。
+
+从原始报文版本升级后，请在系统设置重新填写两个 Webhook URL；已有设备和 PVE 绑定保留。
 
 ### 4. 现代安全认证 (Passkey & Password)
 - **WebAuthn / FIDO2 生物识别**：支持 MacBook Touch ID、Windows Hello、iPhone Face ID/Touch ID 以及 KeePassXC、1Password 等通用 Passkey 管理器一键免密秒级登录。

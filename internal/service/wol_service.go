@@ -1,7 +1,7 @@
 package service
 
 import (
-	"bufio"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -9,21 +9,30 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strconv"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/evalexp/home-nas-panel/internal/db"
 	"github.com/evalexp/home-nas-panel/internal/model"
+	"gorm.io/gorm"
 )
 
 type WOLService struct {
-	mu sync.RWMutex
+	mu       sync.RWMutex
+	client   *http.Client
+	insecure *http.Client
 }
 
 func NewWOLService() *WOLService {
-	return &WOLService{}
+	noRedirect := func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // Only used when explicitly configured.
+	return &WOLService{
+		client:   &http.Client{Timeout: 8 * time.Second, CheckRedirect: noRedirect},
+		insecure: &http.Client{Timeout: 8 * time.Second, CheckRedirect: noRedirect, Transport: transport},
+	}
 }
 
 // WOLResponse represents the result of a wake operation
@@ -34,17 +43,21 @@ type WOLResponse struct {
 	MAC     string `json:"mac,omitempty"`
 }
 
-// FormatDefaultPacket builds the default HTTP wake packet template
-func FormatDefaultPacket(host string, port int, useTLS bool) string {
-	host = strings.TrimSpace(host)
-	if host == "" {
-		host = "192.168.1.1"
+var ErrInvalidWOLConfig = errors.New("WOL Webhook 配置无效")
+
+func validateWebhookURL(rawURL string) error {
+	if !strings.Contains(rawURL, "{mac}") || strings.ContainsAny(rawURL, " \t\r\n") {
+		return errors.New("请输入包含 {mac} 占位符的单个完整 URL")
 	}
-	hostHeader := host
-	if (!useTLS && port != 80 && port > 0) || (useTLS && port != 443 && port > 0) {
-		hostHeader = fmt.Sprintf("%s:%d", host, port)
+	u, err := url.Parse(strings.ReplaceAll(rawURL, "{mac}", "00:11:22:33:44:55"))
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil || u.Fragment != "" {
+		return errors.New("仅支持不含用户信息或片段的 HTTP/HTTPS URL")
 	}
-	return fmt.Sprintf("GET /wakeup?token=REPLACE_YOUR_TOKEN_HERE&mac={mac} HTTP/1.1\r\nHost: %s\r\nUser-Agent: HomeNASPanel-WOL/1.0\r\nConnection: close\r\n\r\n", hostHeader)
+	original, err := url.Parse(rawURL)
+	if err != nil || strings.Contains(original.Host, "{mac}") {
+		return errors.New("{mac} 占位符只能用于 URL 路径或查询参数")
+	}
+	return nil
 }
 
 // GetConfig returns the latest WOL control gateway configuration
@@ -60,53 +73,30 @@ func (s *WOLService) GetConfig() (*model.WOLConfig, error) {
 }
 
 // SaveConfig saves or updates the WOL Control parameters
-func (s *WOLService) SaveConfig(host string, port int, useTLS, tlsSkipVerify bool, packetTemplate string) (*model.WOLConfig, error) {
+func (s *WOLService) SaveConfig(wakeURL, statusURL string, tlsSkipVerify bool) (*model.WOLConfig, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	host = strings.TrimSpace(host)
-	if host == "" {
-		return nil, errors.New("域名或 IP 地址不能为空")
-	}
-
-	if port <= 0 {
-		if useTLS {
-			port = 443
-		} else {
-			port = 80
+	wakeURL, statusURL = strings.TrimSpace(wakeURL), strings.TrimSpace(statusURL)
+	for _, field := range []struct{ name, value string }{{"唤醒 Webhook", wakeURL}, {"在线检测 Webhook", statusURL}} {
+		if err := validateWebhookURL(field.value); err != nil {
+			return nil, fmt.Errorf("%w：%s，%s", ErrInvalidWOLConfig, field.name, err)
 		}
-	}
-
-	if strings.TrimSpace(packetTemplate) == "" {
-		packetTemplate = FormatDefaultPacket(host, port, useTLS)
 	}
 
 	var cfg model.WOLConfig
-	if err := db.DB.Order("id desc").First(&cfg).Error; err != nil {
-		cfg = model.WOLConfig{
-			Host:           host,
-			Port:           port,
-			UseTLS:         useTLS,
-			TLSSkipVerify:  tlsSkipVerify,
-			PacketTemplate: packetTemplate,
-			Enabled:        true,
-			UpdatedAt:      time.Now(),
-		}
-		if err := db.DB.Create(&cfg).Error; err != nil {
-			return nil, fmt.Errorf("保存配置失败: %w", err)
-		}
-	} else {
-		cfg.Host = host
-		cfg.Port = port
-		cfg.UseTLS = useTLS
-		cfg.TLSSkipVerify = tlsSkipVerify
-		cfg.PacketTemplate = packetTemplate
-		cfg.UpdatedAt = time.Now()
-		if err := db.DB.Save(&cfg).Error; err != nil {
-			return nil, fmt.Errorf("更新配置失败: %w", err)
-		}
+	err := db.DB.Order("id desc").First(&cfg).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("读取配置失败: %w", err)
 	}
-
+	cfg.WakeURL = wakeURL
+	cfg.StatusURL = statusURL
+	cfg.TLSSkipVerify = tlsSkipVerify
+	cfg.Enabled = true
+	cfg.UpdatedAt = time.Now()
+	if err := db.DB.Save(&cfg).Error; err != nil {
+		return nil, fmt.Errorf("保存配置失败: %w", err)
+	}
 	return &cfg, nil
 }
 
@@ -204,105 +194,134 @@ func (s *WOLService) DeleteDevice(id uint) error {
 	return db.DB.Delete(&model.WOLDevice{}, id).Error
 }
 
-// SendWakePacket substitutes MAGICSTRING in the packet template and transmits to host:port
-func (s *WOLService) SendWakePacket(cfg *model.WOLConfig, mac string) (*WOLResponse, error) {
-	if cfg == nil || strings.TrimSpace(cfg.Host) == "" {
-		return nil, errors.New("WOL 控制尚未配置，请在系统设置中配置主机与报文模板")
+// callWebhook keeps URL query credentials out of error messages.
+func (s *WOLService) callWebhook(ctx context.Context, rawURL, mac string, tlsSkipVerify bool) ([]byte, error) {
+	if err := validateWebhookURL(rawURL); err != nil {
+		return nil, errors.New("请在系统设置中配置有效的 WOL Webhook URL")
 	}
-
 	mac = strings.TrimSpace(mac)
-	if mac == "" {
-		return nil, errors.New("MAC 地址不能为空")
+	if parsed, err := net.ParseMAC(mac); err != nil || len(parsed) != 6 {
+		return nil, errors.New("MAC 地址格式不正确")
 	}
-
-	template := cfg.PacketTemplate
-	if strings.TrimSpace(template) == "" {
-		template = FormatDefaultPacket(cfg.Host, cfg.Port, cfg.UseTLS)
-	}
-
-	port := cfg.Port
-	if port <= 0 {
-		if cfg.UseTLS {
-			port = 443
-		} else {
-			port = 80
-		}
-	}
-
-	// Only substitute {mac} and {MAC} placeholders. Send raw packet as configured without backend normalization.
-	packetStr := template
-	packetStr = strings.ReplaceAll(packetStr, "{mac}", mac)
-	packetStr = strings.ReplaceAll(packetStr, "{MAC}", mac)
-
-	addr := net.JoinHostPort(cfg.Host, strconv.Itoa(port))
-	dialer := &net.Dialer{Timeout: 6 * time.Second}
-
-	var conn net.Conn
-	var err error
-	if cfg.UseTLS {
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: cfg.TLSSkipVerify,
-			ServerName:         cfg.Host,
-		}
-		conn, err = tls.DialWithDialer(dialer, "tcp", addr, tlsConfig)
-	} else {
-		conn, err = dialer.Dial("tcp", addr)
-	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.ReplaceAll(rawURL, "{mac}", url.QueryEscape(mac)), nil)
 	if err != nil {
-		return nil, fmt.Errorf("连接 WOL 服务器 (%s) 失败: %w", addr, err)
+		return nil, errors.New("无法创建 Webhook 请求，请检查 URL")
 	}
-	defer conn.Close()
-
-	_ = conn.SetDeadline(time.Now().Add(8 * time.Second))
-
-	if _, err := conn.Write([]byte(packetStr)); err != nil {
-		return nil, fmt.Errorf("发送 WOL 报文失败: %w", err)
+	req.Header.Set("User-Agent", "HomeNASPanel-WOL/1.0")
+	req.Header.Set("Cache-Control", "no-cache")
+	client := s.client
+	if tlsSkipVerify {
+		client = s.insecure
 	}
-
-	// Read HTTP response
-	resp, err := http.ReadResponse(bufio.NewReader(conn), nil)
+	resp, err := client.Do(req)
 	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return &WOLResponse{
-				Success: true,
-				Message: "报文已成功发送至 WOL 网关",
-				MAC:     mac,
-			}, nil
-		}
-		return nil, fmt.Errorf("读取 WOL 响应失败: %w", err)
+		return nil, errors.New("Webhook 请求失败，请检查网络、URL 或 TLS 证书（请求超时为 8 秒）")
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("Webhook 返回 HTTP %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 64*1024+1))
+	if err != nil {
+		return nil, errors.New("读取 Webhook 响应失败")
+	}
+	if len(body) > 64*1024 {
+		return nil, errors.New("Webhook 响应超过 64KB 限制")
+	}
+	return body, nil
+}
 
-	bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
+func (s *WOLService) SendWakeWebhook(cfg *model.WOLConfig, mac string) (*WOLResponse, error) {
+	if cfg == nil || strings.TrimSpace(cfg.WakeURL) == "" {
+		return nil, errors.New("尚未配置唤醒 Webhook，请先在系统设置中配置")
+	}
+	body, err := s.callWebhook(context.Background(), cfg.WakeURL, mac, cfg.TLSSkipVerify)
+	if err != nil {
+		return nil, err
+	}
+	var payload struct {
+		Success *bool  `json:"success"`
+		Message string `json:"message"`
+	}
+	if json.Unmarshal(body, &payload) == nil && payload.Success != nil && !*payload.Success {
+		return nil, errors.New("WOL 唤醒失败：Webhook 返回 success: false")
+	}
+	message := payload.Message
+	if message == "" {
+		message = "唤醒指令已成功发送"
+	}
+	return &WOLResponse{Success: true, Message: message, MAC: strings.TrimSpace(mac)}, nil
+}
 
-	var res WOLResponse
-	if err := json.Unmarshal(bodyBytes, &res); err == nil {
-		if !res.Success && (res.Error != "" || res.Message != "") {
-			errMsg := res.Error
-			if errMsg == "" {
-				errMsg = res.Message
+// WOLDeviceStatus distinguishes a failed check from a confirmed offline device.
+type WOLDeviceStatus struct {
+	DeviceID  uint      `json:"deviceId"`
+	Status    string    `json:"status"`
+	Error     string    `json:"error,omitempty"`
+	CheckedAt time.Time `json:"checkedAt"`
+}
+
+func (s *WOLService) checkDeviceStatus(ctx context.Context, cfg *model.WOLConfig, device model.WOLDevice) WOLDeviceStatus {
+	result := WOLDeviceStatus{DeviceID: device.ID, Status: "unknown"}
+	body, err := s.callWebhook(ctx, cfg.StatusURL, device.MAC, cfg.TLSSkipVerify)
+	result.CheckedAt = time.Now()
+	if err != nil {
+		result.Error = err.Error()
+		return result
+	}
+	var payload struct {
+		Success *bool `json:"success"`
+		Online  *bool `json:"online"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil || payload.Online == nil {
+		result.Error = "在线检测 Webhook 必须返回包含布尔字段 online 的 JSON"
+		return result
+	}
+	if payload.Success != nil && !*payload.Success {
+		result.Error = "在线检测 Webhook 返回 success: false"
+		return result
+	}
+	result.Status = "offline"
+	if *payload.Online {
+		result.Status = "online"
+	}
+	return result
+}
+
+// ListDeviceStatuses checks up to four hosts concurrently without blocking device CRUD.
+func (s *WOLService) ListDeviceStatuses(ctx context.Context) ([]WOLDeviceStatus, error) {
+	cfg, err := s.GetConfig()
+	if err != nil || strings.TrimSpace(cfg.StatusURL) == "" {
+		return nil, errors.New("尚未配置在线检测 Webhook，请先在系统设置中配置")
+	}
+	devices, err := s.ListDevices()
+	if err != nil {
+		return nil, err
+	}
+	results := make([]WOLDeviceStatus, len(devices))
+	jobs := make(chan int)
+	var wg sync.WaitGroup
+	for worker := 0; worker < 4 && worker < len(devices); worker++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range jobs {
+				results[i] = s.checkDeviceStatus(ctx, cfg, devices[i])
 			}
-			return nil, fmt.Errorf("WOL 唤醒失败: %s", errMsg)
-		}
-		if res.Message == "" {
-			res.Message = "唤醒报文发送成功"
-		}
-		if res.MAC == "" {
-			res.MAC = mac
-		}
-		res.Success = true
-		return &res, nil
+		}()
 	}
-
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("WOL 服务返回错误 (%d): %s", resp.StatusCode, strings.TrimSpace(string(bodyBytes)))
+	for i := range devices {
+		select {
+		case jobs <- i:
+		case <-ctx.Done():
+			close(jobs)
+			wg.Wait()
+			return nil, ctx.Err()
+		}
 	}
-
-	return &WOLResponse{
-		Success: true,
-		Message: fmt.Sprintf("唤醒报文发送成功 (HTTP %d)", resp.StatusCode),
-		MAC:     mac,
-	}, nil
+	close(jobs)
+	wg.Wait()
+	return results, nil
 }
 
 // WakeDevice triggers wake for a registered device by ID
@@ -312,17 +331,17 @@ func (s *WOLService) WakeDevice(id uint) (*WOLResponse, error) {
 		return nil, errors.New("找不到指定的 WOL 设备")
 	}
 	cfg, err := s.GetConfig()
-	if err != nil || strings.TrimSpace(cfg.Host) == "" {
+	if err != nil || strings.TrimSpace(cfg.WakeURL) == "" {
 		return nil, errors.New("尚未配置 WOL 控制参数，请先在系统设置中配置")
 	}
-	return s.SendWakePacket(cfg, device.MAC)
+	return s.SendWakeWebhook(cfg, device.MAC)
 }
 
 // WakeMAC triggers wake directly with a given MAC address
 func (s *WOLService) WakeMAC(mac string) (*WOLResponse, error) {
 	cfg, err := s.GetConfig()
-	if err != nil || strings.TrimSpace(cfg.Host) == "" {
+	if err != nil || strings.TrimSpace(cfg.WakeURL) == "" {
 		return nil, errors.New("尚未配置 WOL 控制参数，请先在系统设置中配置")
 	}
-	return s.SendWakePacket(cfg, mac)
+	return s.SendWakeWebhook(cfg, mac)
 }

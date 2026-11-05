@@ -15,7 +15,7 @@ import {
   Laptop,
   Info,
 } from 'lucide-react'
-import { api, WOLDevice, WOLConfig } from '../api/client'
+import { api, WOLDevice, WOLConfig, WOLDeviceStatus } from '../api/client'
 
 interface WOLControlPageProps {
   onNavigateToSetting?: () => void
@@ -28,6 +28,9 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
+  const [statuses, setStatuses] = useState<Record<number, WOLDeviceStatus>>({})
+  const [checkingStatus, setCheckingStatus] = useState(false)
+  const [statusRevision, setStatusRevision] = useState(0)
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -70,6 +73,62 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
   useEffect(() => {
     fetchData()
   }, [])
+
+  useEffect(() => {
+    setStatuses({})
+    if (!wolConfig?.statusUrl || devices.length === 0) {
+      setCheckingStatus(false)
+      return
+    }
+
+    const controller = new AbortController()
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const refreshStatuses = async () => {
+      setCheckingStatus(true)
+      try {
+        const results = await api.wol.getDeviceStatuses(controller.signal)
+        if (controller.signal.aborted) return
+        setStatuses(Object.fromEntries(results.map((result) => [result.deviceId, result])))
+      } catch (err: unknown) {
+        if (controller.signal.aborted) return
+        const message = err instanceof Error ? err.message : '在线状态检测失败'
+        setStatuses(Object.fromEntries(devices.map((device) => [device.id, {
+          deviceId: device.id,
+          status: 'unknown' as const,
+          error: message,
+        }])))
+      } finally {
+        if (!controller.signal.aborted) {
+          setCheckingStatus(false)
+          timer = setTimeout(refreshStatuses, 15000)
+        }
+      }
+    }
+    void refreshStatuses()
+    return () => {
+      controller.abort()
+      clearTimeout(timer)
+    }
+  }, [devices, wolConfig?.statusUrl, wolConfig?.tlsSkipVerify, statusRevision])
+
+  const renderDeviceStatus = (deviceId: number) => {
+    const result = statuses[deviceId]
+    const status = result?.status
+    const pending = !!wolConfig?.statusUrl && !result
+    const label = !wolConfig?.statusUrl ? '未配置检测' : pending ? '检测中' :
+      status === 'online' ? '在线' : status === 'offline' ? '离线' : '检测失败'
+    const color = status === 'online' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+      status === 'offline' ? 'bg-slate-800 text-slate-400 border-slate-700' :
+      result?.error ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' :
+      'bg-slate-800 text-slate-400 border-slate-700'
+    const detail = result?.error || (result?.checkedAt ? `检测时间：${new Date(result.checkedAt).toLocaleTimeString('zh-CN')}` : label)
+    return (
+      <span title={detail} className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-[11px] font-semibold ${color}`}>
+        {pending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <span className="w-1.5 h-1.5 rounded-full bg-current" />}
+        {label}
+      </span>
+    )
+  }
 
   const handleOpenAddModal = () => {
     setEditingDevice(null)
@@ -147,6 +206,7 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
     try {
       const res = await api.wol.wakeDevice(device.id)
       setSuccessMsg(res.message || `已向设备「${device.name}」(${device.mac}) 发送唤醒指令！`)
+      setStatusRevision((revision) => revision + 1)
     } catch (err: any) {
       setError(err.message || `唤醒设备「${device.name}」失败`)
     } finally {
@@ -199,7 +259,7 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              管理与远程唤醒局域网内的物理主机，通过自定义 HTTP 报文向目标设备下发唤醒指令
+              管理与远程唤醒局域网内的物理主机，通过 GET Webhook 发送唤醒指令并检测在线状态
             </p>
           </div>
         </div>
@@ -231,7 +291,7 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 shrink-0 text-amber-400" />
             <span>
-              尚未配置 WOL 控制参数。在唤醒设备前，请前往系统设置配置局域网控制网关与报文模板。
+              尚未配置 WOL Webhook。请前往系统设置填写唤醒和在线检测 URL。
             </span>
           </div>
           {onNavigateToSetting && (
@@ -312,16 +372,10 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
               </span>
             </div>
 
-            {wolConfig?.configured && (
+            {wolConfig?.statusUrl && (
               <div className="flex items-center gap-2 text-xs text-slate-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-slate-400">唤醒网关:</span>
-                <span className="font-mono text-slate-200">
-                  {wolConfig.host}:{wolConfig.port}
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-cyan-300">
-                  {wolConfig.useTls ? 'TLS' : 'TCP'}
-                </span>
+                {checkingStatus && <RefreshCw className="w-3 h-3 animate-spin text-cyan-400" />}
+                <span>{checkingStatus ? '正在检测在线状态' : '在线状态每 15 秒自动刷新'}</span>
               </div>
             )}
           </div>
@@ -334,6 +388,7 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                   <th className="py-3 px-4 rounded-l-xl w-16 text-center">ID</th>
                   <th className="py-3 px-4">机器名称</th>
                   <th className="py-3 px-4">物理 MAC 地址</th>
+                  <th className="py-3 px-4">在线状态</th>
                   <th className="py-3 px-4">创建时间</th>
                   <th className="py-3 px-4 text-right rounded-r-xl">操作</th>
                 </tr>
@@ -397,6 +452,8 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                           </button>
                         </div>
                       </td>
+
+                      <td className="py-4 px-4">{renderDeviceStatus(device.id)}</td>
 
                       {/* Created Time */}
                       <td className="py-4 px-4 font-mono text-slate-400 text-xs">
@@ -499,6 +556,11 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                     </div>
                   </div>
 
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>在线状态</span>
+                    {renderDeviceStatus(device.id)}
+                  </div>
+
                   {/* MAC Box */}
                   <div className="flex items-center justify-between bg-slate-950/70 border border-slate-800 px-3 py-2 rounded-xl">
                     <span className="font-mono text-xs text-cyan-300 font-bold tracking-wide">
@@ -570,12 +632,12 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
           <div className="bg-slate-950/40 border border-slate-800/60 rounded-2xl p-4">
             <div className="font-semibold text-slate-200 mb-1 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              网关报文转发
+              Webhook 唤醒与检测
             </div>
             <p className="text-[11px] text-slate-400">
-              面板通过您在系统设置中配置的局域网控制网关或路由器转发唤醒报文，报文中的{' '}
+              面板通过 GET 请求调用配置的唤醒与在线检测 Webhook，URL 中的{' '}
               <code className="text-cyan-300 font-mono">&#123;mac&#125;</code>{' '}
-              会自动替换为目标设备的物理 MAC 地址。
+              会自动替换为目标设备的 MAC 地址。在线状态以检测 Webhook 返回的结果为准。
             </p>
           </div>
         </div>

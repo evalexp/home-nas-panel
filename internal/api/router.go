@@ -80,6 +80,7 @@ func SetupRouter(
 				wol.POST("/config", wolH.SaveConfig)
 				wol.DELETE("/config", wolH.DeleteConfig)
 				wol.GET("/devices", wolH.ListDevices)
+				wol.GET("/devices/status", wolH.ListDeviceStatuses)
 				wol.POST("/devices", wolH.CreateDevice)
 				wol.PUT("/devices/:id", wolH.UpdateDevice)
 				wol.DELETE("/devices/:id", wolH.DeleteDevice)

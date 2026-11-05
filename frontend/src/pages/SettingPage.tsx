@@ -7,13 +7,8 @@ import {
   RefreshCw,
   Trash2,
   Fingerprint,
-  ChevronDown,
-  ChevronUp,
-  Code2,
-  RotateCcw,
 } from 'lucide-react'
 import { api, User, WOLDevice, WOLConfig } from '../api/client'
-import { WOLPacketTemplateSection } from '../components/WOLPacketTemplateSection'
 
 interface SettingPageProps {
   user: User | null
@@ -36,11 +31,9 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
   const [wolDevices, setWolDevices] = useState<WOLDevice[]>([])
 
   // WOL Control Configuration State
-  const [wolHost, setWolHost] = useState('192.168.1.1')
-  const [wolPort, setWolPort] = useState<number>(80)
-  const [wolUseTls, setWolUseTls] = useState(false)
+  const [wakeUrl, setWakeUrl] = useState('')
+  const [statusUrl, setStatusUrl] = useState('')
   const [wolTlsSkipVerify, setWolTlsSkipVerify] = useState(false)
-  const [wolPacketTemplate, setWolPacketTemplate] = useState('')
   const [wolConfig, setWolConfig] = useState<WOLConfig | null>(null)
   const [wolLoading, setWolLoading] = useState(false)
   const [wolSuccess, setWolSuccess] = useState('')
@@ -52,28 +45,13 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
   const [passkeyMsg, setPasskeyMsg] = useState('')
   const [passkeyErr, setPasskeyErr] = useState('')
 
-  const generateDefaultTemplate = (host: string, port: number, useTls: boolean) => {
-    const h = host.trim() || '192.168.1.1'
-    const p = port || (useTls ? 443 : 80)
-    const hostHeader = (!useTls && p === 80) || (useTls && p === 443) ? h : `${h}:${p}`
-    return `GET /wakeup?token=REPLACE_YOUR_TOKEN_HERE&mac={mac} HTTP/1.1\r\nHost: ${hostHeader}\r\nUser-Agent: HomeNASPanel-WOL/1.0\r\nConnection: close\r\n\r\n`
-  }
-
   const loadWolConfig = async () => {
     try {
       const cfg = await api.wol.getConfig()
       setWolConfig(cfg)
-      if (cfg.configured) {
-        if (cfg.host) setWolHost(cfg.host)
-        if (cfg.port) setWolPort(cfg.port)
-        setWolUseTls(cfg.useTls ?? false)
-        setWolTlsSkipVerify(cfg.tlsSkipVerify ?? false)
-        if (cfg.packetTemplate) setWolPacketTemplate(cfg.packetTemplate)
-      } else {
-        if (!wolPacketTemplate) {
-          setWolPacketTemplate(generateDefaultTemplate('192.168.1.1', 80, false))
-        }
-      }
+      setWakeUrl(cfg.wakeUrl ?? '')
+      setStatusUrl(cfg.statusUrl ?? '')
+      setWolTlsSkipVerify(cfg.tlsSkipVerify ?? false)
     } catch {}
   }
 
@@ -155,38 +133,40 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
   // Save WOL Control configuration
   const handleSaveWol = async (e: React.FormEvent) => {
     e.preventDefault()
-    setWolLoading(true)
     setWolError('')
     setWolSuccess('')
 
-    const host = wolHost.trim()
-    if (!host) {
-      setWolError('请输入有效的域名或 IP 地址')
-      setWolLoading(false)
-      return
+    const urls = { wakeUrl: wakeUrl.trim(), statusUrl: statusUrl.trim() }
+    for (const [label, value] of [
+      ['唤醒 URL', urls.wakeUrl],
+      ['在线检测 URL', urls.statusUrl],
+    ]) {
+      try {
+        if (!/^https?:\/\/[^\s/\\?#]+/i.test(value) || /[\s\\]/.test(value)) {
+          throw new Error('invalid URL')
+        }
+        const url = new URL(value.replace(/\{mac\}/g, '00:11:22:33:44:55'))
+        if (!url.hostname || !['http:', 'https:'].includes(url.protocol)) {
+          throw new Error('invalid URL')
+        }
+      } catch {
+        setWolError(`${label} 必须是以 http:// 或 https:// 开头的完整 URL`)
+        return
+      }
+      if (!value.includes('{mac}')) {
+        setWolError(`${label} 必须包含 {mac} 占位符`)
+        return
+      }
     }
 
-    const templateToSave = wolPacketTemplate.length > 0 ? wolPacketTemplate : generateDefaultTemplate(host, wolPort, wolUseTls)
-
+    setWolLoading(true)
     try {
-      const res = await api.wol.saveConfig({
-        host: host,
-        port: Number(wolPort) || (wolUseTls ? 443 : 80),
-        useTls: wolUseTls,
-        tlsSkipVerify: wolTlsSkipVerify,
-        packetTemplate: templateToSave,
-      })
+      const res = await api.wol.saveConfig({ ...urls, tlsSkipVerify: wolTlsSkipVerify })
       setWolSuccess(res.message || 'WOL Control 配置已成功保存')
-      setWolConfig({
-        configured: true,
-        host: host,
-        port: Number(wolPort) || (wolUseTls ? 443 : 80),
-        useTls: wolUseTls,
-        tlsSkipVerify: wolTlsSkipVerify,
-        packetTemplate: templateToSave,
-        updatedAt: res.updatedAt,
-      })
-      setWolPacketTemplate(templateToSave)
+      setWolConfig(res)
+      setWakeUrl(res.wakeUrl ?? '')
+      setStatusUrl(res.statusUrl ?? '')
+      setWolTlsSkipVerify(res.tlsSkipVerify ?? false)
     } catch (err: any) {
       setWolError(err.message || '保存 WOL 配置失败')
     } finally {
@@ -203,11 +183,9 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
     try {
       const res = await api.wol.deleteConfig()
       setWolConfig({ configured: false })
-      setWolHost('192.168.1.1')
-      setWolPort(80)
-      setWolUseTls(false)
+      setWakeUrl('')
+      setStatusUrl('')
       setWolTlsSkipVerify(false)
-      setWolPacketTemplate(generateDefaultTemplate('192.168.1.1', 80, false))
       setWolSuccess(res.message || 'WOL Control 配置已成功删除')
     } catch (err: any) {
       setWolError(err.message || '删除配置失败')
@@ -406,7 +384,7 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
             <div>
               <h3 className="text-lg font-bold text-white">WOL Control 配置 (Wake-on-LAN)</h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                配置局域网网络唤醒控制网关的通信参数与 HTTP 报文模板
+                配置局域网唤醒与在线检测的 GET Webhook URL
               </p>
             </div>
           </div>
@@ -444,95 +422,72 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
         )}
 
         <form onSubmit={handleSaveWol} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                域名或 IP 地址 <span className="text-rose-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={wolHost}
-                onChange={(e) => {
-                  setWolHost(e.target.value)
-                  setWolSuccess('')
-                  setWolError('')
-                }}
-                placeholder="例如: 192.168.1.1 或 router.lan"
-                required
-                className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                端口 <span className="text-rose-400">*</span>
-              </label>
-              <input
-                type="number"
-                value={wolPort}
-                onChange={(e) => setWolPort(Number(e.target.value))}
-                placeholder="80"
-                required
-                min={1}
-                max={65535}
-                className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
-              />
-            </div>
+          <div>
+            <label htmlFor="wolWakeUrl" className="block text-xs font-semibold text-slate-300 mb-1.5">
+              唤醒 URL <span className="text-rose-400">*</span>
+            </label>
+            <input
+              id="wolWakeUrl"
+              type="text"
+              value={wakeUrl}
+              onChange={(e) => {
+                setWakeUrl(e.target.value)
+                setWolSuccess('')
+                setWolError('')
+              }}
+              placeholder="http://router.lan:57820/wakeup?token=YOUR_TOKEN&mac={mac}"
+              required
+              className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
+            />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 bg-slate-800/50 rounded-2xl border border-slate-800">
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="wolUseTLS"
-                checked={wolUseTls}
-                onChange={(e) => {
-                  const checked = e.target.checked
-                  setWolUseTls(checked)
-                  if (checked && wolPort === 80) {
-                    setWolPort(443)
-                  } else if (!checked && wolPort === 443) {
-                    setWolPort(80)
-                  }
-                }}
-                className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer"
-              />
-              <label htmlFor="wolUseTLS" className="text-xs text-slate-300 cursor-pointer">
-                启用 TLS 加密连接 (HTTPS)
-              </label>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="wolTlsSkipVerify"
-                checked={wolTlsSkipVerify}
-                onChange={(e) => setWolTlsSkipVerify(e.target.checked)}
-                disabled={!wolUseTls}
-                className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer disabled:opacity-40"
-              />
-              <label
-                htmlFor="wolTlsSkipVerify"
-                className={`text-xs cursor-pointer ${
-                  wolUseTls ? 'text-slate-300' : 'text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                启用 TLS 时跳过证书检验 (允许自签名证书)
-              </label>
-            </div>
+          <div>
+            <label htmlFor="wolStatusUrl" className="block text-xs font-semibold text-slate-300 mb-1.5">
+              在线检测 URL <span className="text-rose-400">*</span>
+            </label>
+            <input
+              id="wolStatusUrl"
+              type="text"
+              value={statusUrl}
+              onChange={(e) => {
+                setStatusUrl(e.target.value)
+                setWolSuccess('')
+                setWolError('')
+              }}
+              placeholder="http://router.lan:57820/wakeup?token=YOUR_TOKEN&checkOnline={mac}"
+              required
+              className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
+            />
           </div>
 
-          {/* WOL Packet Template Upload & Visualizer Section */}
-          <WOLPacketTemplateSection
-            value={wolPacketTemplate}
-            onChange={setWolPacketTemplate}
-            host={wolHost}
-            port={Number(wolPort) || (wolUseTls ? 443 : 80)}
-            useTls={wolUseTls}
-            onResetDefault={() =>
-              setWolPacketTemplate(generateDefaultTemplate(wolHost, wolPort, wolUseTls))
-            }
-          />
+          <div className="flex items-center gap-2 p-3.5 bg-slate-800/50 rounded-2xl border border-slate-800">
+            <input
+              type="checkbox"
+              id="wolTlsSkipVerify"
+              checked={wolTlsSkipVerify}
+              onChange={(e) => {
+                setWolTlsSkipVerify(e.target.checked)
+                setWolSuccess('')
+                setWolError('')
+              }}
+              className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+            />
+            <label htmlFor="wolTlsSkipVerify" className="text-xs text-slate-300 cursor-pointer">
+              允许跳过 TLS 证书校验（用于自签名证书，对两个 HTTPS Webhook 均生效）
+            </label>
+          </div>
+
+          <div className="space-y-1.5 p-3.5 bg-slate-800/50 rounded-2xl border border-slate-800 text-xs text-slate-400">
+            <p>
+              两个 Webhook 均使用 GET 请求，每项填写一个完整的 HTTP/HTTPS URL，必须包含{' '}
+              <code className="text-amber-400">{'{mac}'}</code> 占位符，后端会将其替换为设备的 MAC 地址。
+              是否使用 TLS 由 URL 协议决定。
+            </p>
+            <p>
+              在线检测接口应返回 JSON：<code className="text-slate-300">{'{"success":true,"online":true}'}</code>，
+              <code className="text-slate-300">online</code> 为 <code className="text-slate-300">false</code> 表示离线。
+            </p>
+          </div>
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
             {wolConfig?.configured && (

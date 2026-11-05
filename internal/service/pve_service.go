@@ -455,7 +455,7 @@ func (s *PVEService) GetOnlineStatus(wolSvc *WOLService) map[string]interface{} 
 	wolDeviceMac := ""
 
 	if wolSvc != nil {
-		if wCfg, err := wolSvc.GetConfig(); err == nil && wCfg != nil && strings.TrimSpace(wCfg.Host) != "" {
+		if wCfg, err := wolSvc.GetConfig(); err == nil && wCfg != nil && strings.TrimSpace(wCfg.WakeURL) != "" {
 			wolConfigured = true
 		}
 	}
@@ -515,4 +515,3 @@ func (s *PVEService) WakePVE(wolSvc *WOLService) (*WOLResponse, error) {
 
 	return wolSvc.WakeDevice(*cfg.WOLDeviceID)
 }
-
