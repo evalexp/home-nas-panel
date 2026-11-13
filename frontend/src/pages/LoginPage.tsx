@@ -5,12 +5,10 @@ import {
   Lock,
   User as UserIcon,
   ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  KeyRound,
   AlertCircle,
 } from 'lucide-react'
 import { api, setToken, User } from '../api/client'
+import { ThemeToggle } from '../components/ThemeToggle'
 
 interface LoginPageProps {
   onLoginSuccess: (user: User) => void
@@ -40,7 +38,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         if (!res.hasPasskey) {
           setMode('password')
         }
-      } catch (err: any) {
+      } catch {
         setError('无法连接到 NAS 面板后台服务，请检查网络')
       }
     }
@@ -122,46 +120,46 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-canvas px-4 pb-8 pt-20 text-ink">
+      <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
+        <ThemeToggle />
+      </div>
 
-      <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative z-10 animate-in fade-in duration-300">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-xl shadow-cyan-500/25 mb-4">
-            <Server className="w-7 h-7 text-white" />
+      <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-panel sm:p-8">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-accent-soft text-accent">
+            <Server className="h-7 w-7" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-white">Home NAS Panel</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Home NAS Panel</h1>
+          <p className="mt-2 text-sm leading-relaxed text-body">家庭服务导航、主机状态与远程唤醒</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div className="mb-6 flex items-center gap-2.5 rounded-lg border border-danger-border bg-danger-soft p-3.5 text-xs text-danger">
+            <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Wizard: Register Passkey right after initial admin creation */}
         {guideRegisterPasskey ? (
-          <div className="text-center py-4 space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto">
-              <Fingerprint className="w-8 h-8" />
+          <div className="space-y-4 py-4 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-accent-soft text-accent">
+              <Fingerprint className="h-7 w-7" aria-hidden="true" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">管理员创建成功！</h2>
-              <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+              <h2 className="text-base font-semibold text-ink">管理员创建成功！</h2>
+              <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-body">
                 强烈建议现在为当前设备绑定 Passkey，下次即可使用指纹/面容一秒免密登录。
               </p>
             </div>
-            <div className="pt-2 flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2.5 pt-2">
               <button
                 onClick={handleRegisterPasskeyNow}
                 disabled={passkeyLoading}
-                className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-on-primary hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-50 motion-safe:transition-colors cursor-pointer"
               >
-                <Fingerprint className="w-4 h-4" />
+                <Fingerprint className="h-4 w-4" aria-hidden="true" />
                 <span>{passkeyLoading ? '等待生物识别...' : '立即启用 Passkey 登录'}</span>
               </button>
               <button
@@ -169,7 +167,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   const me = await api.auth.me()
                   onLoginSuccess(me)
                 }}
-                className="w-full py-2.5 text-slate-400 hover:text-slate-200 text-xs transition-colors cursor-pointer"
+                className="w-full rounded-lg py-2.5 text-xs text-body hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent motion-safe:transition-colors cursor-pointer"
               >
                 稍后在设置中绑定
               </button>
@@ -179,8 +177,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <>
             {/* First-time initial setup prompt */}
             {isInitialized === false && (
-              <div className="mb-6 p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl text-cyan-400 text-xs text-center font-medium">
-                ✨ 首次使用：请先设置家庭 NAS 控制面板的管理员账号
+              <div className="mb-6 rounded-lg border border-border bg-accent-soft p-3 text-center text-xs font-medium leading-relaxed text-accent">
+                首次使用：请先设置家庭 NAS 控制面板的管理员账号
               </div>
             )}
 
@@ -191,17 +189,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   type="button"
                   onClick={handlePasskeyLogin}
                   disabled={passkeyLoading}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:scale-95 text-white rounded-2xl font-bold text-base shadow-xl shadow-cyan-500/25 transition-all flex items-center justify-center gap-3 cursor-pointer group"
+                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-primary px-6 py-4 text-base font-semibold text-on-primary hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-50 motion-safe:transition-colors cursor-pointer"
                 >
-                  <Fingerprint className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                  <Fingerprint className="h-6 w-6 shrink-0" aria-hidden="true" />
                   <span>{passkeyLoading ? '正在验证生物特征...' : 'Passkey 一键免密登录'}</span>
                 </button>
 
-                <div className="pt-4 border-t border-slate-800 text-center">
+                <div className="border-t border-border pt-4 text-center">
                   <button
                     type="button"
                     onClick={() => setMode('password')}
-                    className="text-xs text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+                    className="rounded-lg px-2 py-2 text-xs text-body hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent motion-safe:transition-colors cursor-pointer"
                   >
                     使用账号密码登录 ➔
                   </button>
@@ -211,53 +209,53 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               /* Password form (or initial registration) */
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="mb-1.5 block text-xs font-semibold text-body">
                     管理员用户名
                   </label>
                   <div className="relative">
-                    <UserIcon className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                    <UserIcon className="absolute left-3.5 top-3 h-4 w-4 text-muted" aria-hidden="true" />
                     <input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="admin"
                       required
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500"
+                      className="w-full rounded-lg border border-border-strong bg-field py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="mb-1.5 block text-xs font-semibold text-body">
                     登录密码
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                    <Lock className="absolute left-3.5 top-3 h-4 w-4 text-muted" aria-hidden="true" />
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500"
+                      className="w-full rounded-lg border border-border-strong bg-field py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent"
                     />
                   </div>
                 </div>
 
                 {!isInitialized && (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    <label className="mb-1.5 block text-xs font-semibold text-body">
                       确认密码
                     </label>
                     <div className="relative">
-                      <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                      <Lock className="absolute left-3.5 top-3 h-4 w-4 text-muted" aria-hidden="true" />
                       <input
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
                         required
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500"
+                        className="w-full rounded-lg border border-border-strong bg-field py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent"
                       />
                     </div>
                   </div>
@@ -266,10 +264,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:scale-95 disabled:opacity-50 text-white rounded-xl font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-on-primary hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-50 motion-safe:transition-colors cursor-pointer"
                 >
                   <span>{loading ? '提交中...' : isInitialized ? '登录面板' : '创建管理员并继续'}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
 
                 {isInitialized && hasPasskey && (
@@ -277,7 +275,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     <button
                       type="button"
                       onClick={() => setMode('passkey')}
-                      className="text-xs text-cyan-400 hover:underline cursor-pointer"
+                      className="rounded-lg px-2 py-2 text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent cursor-pointer"
                     >
                       切换回 Passkey 生物识别登录
                     </button>

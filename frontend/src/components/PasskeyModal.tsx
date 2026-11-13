@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, KeyRound, Plus, Trash2, Fingerprint, Smartphone, Laptop, Check } from 'lucide-react'
+import { X, KeyRound, Plus, Trash2, Fingerprint, Laptop, Check } from 'lucide-react'
 import { api, User } from '../api/client'
 
 interface PasskeyModalProps {
@@ -52,33 +52,33 @@ export const PasskeyModal: React.FC<PasskeyModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm">
+      <div className="relative w-full max-w-lg bg-surface border border-border rounded-2xl shadow-float p-6 sm:p-8 animate-in fade-in zoom-in-95 duration-150">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors"
+          className="absolute top-5 right-5 text-muted hover:text-ink p-2 rounded-lg hover:bg-raised transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-2xl">
+          <div className="p-2.5 bg-accent-soft text-accent border border-accent-border rounded-xl">
             <Fingerprint className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Passkey 凭证管理</h2>
-            <p className="text-xs text-slate-400">使用 Touch ID、Face ID 或安全密钥免密安全登录</p>
+            <h2 className="text-lg font-semibold text-ink">Passkey 凭证管理</h2>
+            <p className="text-xs text-muted">使用 Touch ID、Face ID 或安全密钥免密安全登录</p>
           </div>
         </div>
 
         {error && (
-          <div className="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs">
+          <div className="mt-4 p-3 bg-danger-soft border border-danger-border rounded-lg text-danger text-xs">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs flex items-center gap-2">
+          <div className="mt-4 p-3 bg-success-soft border border-success-border rounded-lg text-success text-xs flex items-center gap-2">
             <Check className="w-4 h-4" />
             <span>{success}</span>
           </div>
@@ -86,33 +86,33 @@ export const PasskeyModal: React.FC<PasskeyModalProps> = ({
 
         {/* Existing Passkeys List */}
         <div className="mt-5 space-y-2.5">
-          <label className="block text-xs font-semibold text-slate-300">已绑定的设备凭证</label>
+          <label className="block text-xs font-semibold text-body">已绑定的设备凭证</label>
           {(!user?.passkeys || user.passkeys.length === 0) ? (
-            <div className="p-4 rounded-2xl bg-slate-800/40 border border-slate-700/60 text-center">
-              <KeyRound className="w-6 h-6 text-slate-500 mx-auto mb-2" />
-              <p className="text-xs text-slate-400">尚未绑定任何 Passkey 设备凭证</p>
-              <p className="text-[11px] text-slate-500 mt-1">推荐立即绑定，享受指纹/面容秒速开门体验</p>
+            <div className="p-4 rounded-xl bg-raised border border-border text-center">
+              <KeyRound className="w-6 h-6 text-muted mx-auto mb-2" />
+              <p className="text-xs text-muted">尚未绑定任何 Passkey 设备凭证</p>
+              <p className="text-[11px] text-muted mt-1">推荐立即绑定，享受指纹/面容秒速开门体验</p>
             </div>
           ) : (
             user.passkeys.map((pk) => (
               <div
                 key={pk.id}
-                className="flex items-center justify-between p-3.5 bg-slate-800/60 border border-slate-700 rounded-2xl"
+                className="flex items-center justify-between p-3.5 bg-raised border border-border rounded-xl"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-slate-700/60 text-cyan-400">
+                  <div className="p-2 rounded-lg bg-raised-strong text-accent">
                     <Laptop className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-slate-200">{pk.deviceName}</div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-sm font-medium text-ink">{pk.deviceName}</div>
+                    <div className="text-[11px] text-muted">
                       创建时间: {new Date(pk.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => handleDeletePasskey(pk.id)}
-                  className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer"
+                  className="p-2 text-muted hover:text-danger hover:bg-danger-soft rounded-lg transition-colors cursor-pointer"
                   title="删除此凭证"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -123,26 +123,26 @@ export const PasskeyModal: React.FC<PasskeyModalProps> = ({
         </div>
 
         {/* Enroll New Passkey */}
-        <div className="mt-6 pt-5 border-t border-slate-800 space-y-3">
-          <label className="block text-xs font-semibold text-slate-300">绑定当前设备</label>
+        <div className="mt-6 pt-5 border-t border-border space-y-3">
+          <label className="block text-xs font-semibold text-body">绑定当前设备</label>
           <div className="flex gap-2">
             <input
               type="text"
               value={deviceName}
               onChange={(e) => setDeviceName(e.target.value)}
               placeholder="设备备注名称 (例如 我的 iPhone / MacBook)"
-              className="flex-1 px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-cyan-500"
+              className="flex-1 px-3.5 py-2.5 bg-field border border-border-strong rounded-lg text-sm text-ink focus:outline-none focus:border-accent-border"
             />
             <button
               onClick={handleRegisterPasskey}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-semibold text-sm rounded-xl transition-all shadow-md shadow-cyan-500/20 active:scale-95 cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-on-primary font-semibold text-sm rounded-lg transition-all shadow-panel active:translate-y-px cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>{loading ? '等待验证...' : '立即绑定'}</span>
             </button>
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-muted">
             点击后系统将调用系统原生的 Touch ID / Face ID 或 Windows Hello 鉴权流程。
           </p>
         </div>

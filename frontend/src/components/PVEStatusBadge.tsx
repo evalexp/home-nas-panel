@@ -12,7 +12,7 @@ export const PVEStatusBadge: React.FC = () => {
       const res = await api.pve.getOnline()
       setData(res)
     } catch {
-      // Silently catch in badge
+      // Keep the last known state when a background refresh fails.
     } finally {
       if (manual) setLoading(false)
     }
@@ -25,41 +25,25 @@ export const PVEStatusBadge: React.FC = () => {
   }, [])
 
   const isOnline = data?.online ?? false
+  const label = data ? (isOnline ? 'PVE 运行中' : 'PVE 已停机') : '检测中...'
 
   return (
     <button
       type="button"
       onClick={() => fetchStatus(true)}
       disabled={loading}
-      className={`relative flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border transition-all duration-300 cursor-pointer shadow-sm select-none ${
-        isOnline
-          ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300 hover:bg-emerald-500/25 shadow-emerald-500/10'
-          : 'bg-slate-800/80 border-slate-700/80 text-slate-400 hover:bg-slate-800 hover:text-slate-300'
+      className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors cursor-pointer ${
+        isOnline ? 'bg-success-soft text-success hover:bg-raised' : 'bg-raised text-muted hover:bg-raised-strong'
       }`}
-      title="PVE 节点运行状态（定时每 10 秒刷新，点击可手动刷新）"
+      title={`${label}（每 10 秒自动刷新，点击立即刷新）`}
+      aria-label={`${label}，点击刷新 PVE 状态`}
     >
-      {/* Animated Status Indicator Dot or Refresh Spinner */}
-      <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 items-center justify-center">
-        {loading ? (
-          <RefreshCw className="w-2.5 h-2.5 animate-spin text-cyan-400" />
-        ) : (
-          <>
-            {isOnline && (
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            )}
-            <span
-              className={`relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 ${
-                isOnline ? 'bg-emerald-400' : 'bg-slate-500'
-              }`}
-            />
-          </>
-        )}
-      </span>
-
-      {/* Text reminder */}
-      <span className="text-[11px] sm:text-xs font-bold tracking-wide whitespace-nowrap">
-        {data ? (isOnline ? 'PVE 运行中' : 'PVE 已停机') : '检测中...'}
-      </span>
+      {loading ? (
+        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-success' : 'bg-muted'}`} />
+      )}
+      <span className="hidden whitespace-nowrap min-[420px]:inline">{label}</span>
     </button>
   )
 }

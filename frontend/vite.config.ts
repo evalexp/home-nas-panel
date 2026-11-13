@@ -18,8 +18,8 @@ export default defineConfig({
         name: 'Home NAS Panel',
         short_name: 'NAS Panel',
         description: '家庭 NAS 控制与导航面板',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#f2f4f8',
+        background_color: '#f2f4f8',
         display: 'standalone',
         orientation: 'portrait-primary',
         icons: [

@@ -1,17 +1,36 @@
 <!doctype html>
-<html lang="zh-CN" class="dark">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <meta name="theme-color" content="#f2f4f8" />
+    <script>
+      (() => {
+        // Keep this pre-paint initialization aligned with src/theme.ts.
+        let preference = null;
+        try {
+          const stored = localStorage.getItem('home-nas-panel-theme');
+          if (stored === 'light' || stored === 'dark') preference = stored;
+        } catch {
+          // Storage can be unavailable in private or restricted contexts.
+        }
+        const systemDark = typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = preference ?? (systemDark ? 'dark' : 'light');
+        const root = document.documentElement;
+        root.dataset.theme = theme;
+        root.classList.toggle('dark', theme === 'dark');
+        root.style.colorScheme = theme;
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'dark' ? '#1c2332' : '#f2f4f8');
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#020617" />
     <meta name="description" content="家庭 NAS 控制与导航 PWA 面板" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Home NAS Panel</title>
   </head>
-  <body class="bg-slate-950 text-slate-100">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

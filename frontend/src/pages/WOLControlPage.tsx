@@ -117,10 +117,10 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
     const pending = !!wolConfig?.statusUrl && !result
     const label = !wolConfig?.statusUrl ? '未配置检测' : pending ? '检测中' :
       status === 'online' ? '在线' : status === 'offline' ? '离线' : '检测失败'
-    const color = status === 'online' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-      status === 'offline' ? 'bg-slate-800 text-slate-400 border-slate-700' :
-      result?.error ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' :
-      'bg-slate-800 text-slate-400 border-slate-700'
+    const color = status === 'online' ? 'bg-success-soft text-success border-success-border' :
+      status === 'offline' ? 'bg-raised text-muted border-border' :
+      result?.error ? 'bg-warning-soft text-warning border-warning-border' :
+      'bg-raised text-muted border-border'
     const detail = result?.error || (result?.checkedAt ? `检测时间：${new Date(result.checkedAt).toLocaleTimeString('zh-CN')}` : label)
     return (
       <span title={detail} className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-[11px] font-semibold ${color}`}>
@@ -243,22 +243,19 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Header Bar */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <div className="p-3 rounded-xl bg-accent-soft text-accent">
             <Zap className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold text-white tracking-tight">WOL 控制 (Wake-on-LAN)</h2>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                局域网网络唤醒
-              </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+              <h2 className="text-xl font-semibold text-ink tracking-tight">WOL 控制 (Wake-on-LAN)</h2>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-raised text-body border border-border">
                 共 {devices.length} 台设备
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-muted mt-1">
               管理与远程唤醒局域网内的物理主机，通过 GET Webhook 发送唤醒指令并检测在线状态
             </p>
           </div>
@@ -268,16 +265,16 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
           <button
             onClick={fetchData}
             disabled={loading}
-            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 transition-colors cursor-pointer"
+            className="p-2.5 bg-raised hover:bg-raised-strong text-body hover:text-ink rounded-lg border border-border transition-colors cursor-pointer"
             title="刷新列表"
             aria-label="刷新列表"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-accent' : ''}`} />
           </button>
 
           <button
             onClick={handleOpenAddModal}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 rounded-xl text-xs font-bold shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-xs font-semibold shadow-panel active:translate-y-px transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>新增设备</span>
@@ -287,9 +284,9 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
 
       {/* Unconfigured Alert Banner */}
       {wolConfig && !wolConfig.configured && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-2xl text-amber-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+        <div className="p-4 bg-warning-soft border border-warning-border rounded-xl text-warning text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-panel">
           <div className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 shrink-0 text-amber-400" />
+            <AlertTriangle className="w-5 h-5 shrink-0 text-warning" />
             <span>
               尚未配置 WOL Webhook。请前往系统设置填写唤醒和在线检测 URL。
             </span>
@@ -297,7 +294,7 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
           {onNavigateToSetting && (
             <button
               onClick={onNavigateToSetting}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 rounded-xl text-xs font-semibold self-start sm:self-auto cursor-pointer transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-warning-soft hover:bg-warning-soft text-warning border border-warning-border rounded-lg text-xs font-semibold self-start sm:self-auto cursor-pointer transition-colors"
             >
               <span>前往系统设置</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -308,14 +305,14 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
 
       {/* Success Notification */}
       {successMsg && (
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
+        <div className="p-4 bg-success-soft border border-success-border rounded-xl text-success text-xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
           <div className="flex items-center gap-2.5">
             <CheckCircle className="w-4 h-4 shrink-0" />
             <span className="font-medium">{successMsg}</span>
           </div>
           <button
             onClick={() => setSuccessMsg('')}
-            className="text-emerald-400/70 hover:text-emerald-300 p-1 cursor-pointer transition-colors"
+            className="text-success hover:text-success p-1 cursor-pointer transition-colors"
             aria-label="关闭提示"
           >
             <X className="w-4 h-4" />
@@ -325,14 +322,14 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
 
       {/* Error Notification */}
       {error && (
-        <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
+        <div className="p-4 bg-danger-soft border border-danger-border rounded-xl text-danger text-xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span className="font-mono">{error}</span>
           </div>
           <button
             onClick={() => setError('')}
-            className="text-rose-400/70 hover:text-rose-300 p-1 cursor-pointer transition-colors"
+            className="text-danger hover:text-danger p-1 cursor-pointer transition-colors"
             aria-label="关闭提示"
           >
             <X className="w-4 h-4" />
@@ -342,39 +339,39 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
 
       {/* Table Container or Empty State */}
       {devices.length === 0 && !loading ? (
-        <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-xl">
-          <div className="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-500">
+        <div className="bg-surface border border-border rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-panel">
+          <div className="w-16 h-16 rounded-xl bg-raised border border-border flex items-center justify-center text-muted">
             <Laptop className="w-8 h-8" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">暂无 WOL 设备</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm">
+            <h3 className="text-base font-semibold text-ink">暂无 WOL 设备</h3>
+            <p className="text-xs text-muted mt-1 max-w-sm">
               添加您的第一台支持网络唤醒的物理设备（如 PVE 宿主机、NAS、工作站等），即可实现一键开机唤醒。
             </p>
           </div>
           <button
             onClick={handleOpenAddModal}
-            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-lg shadow-amber-500/20 mt-2"
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-xs font-semibold active:translate-y-px transition-all cursor-pointer shadow-panel mt-2"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>添加第一台设备</span>
           </button>
         </div>
       ) : (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl">
+        <div className="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-panel">
           {/* Card Top Information */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-800/80">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-border">
             <div className="flex items-center gap-2.5">
-              <Server className="w-5 h-5 text-amber-400" />
-              <h3 className="font-bold text-base text-white tracking-tight">受控物理设备列表</h3>
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-amber-400 border border-slate-700">
+              <Server className="w-5 h-5 text-accent" />
+              <h3 className="font-semibold text-base text-ink tracking-tight">受控物理设备列表</h3>
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-raised text-muted border border-border">
                 {devices.length} 台
               </span>
             </div>
 
             {wolConfig?.statusUrl && (
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                {checkingStatus && <RefreshCw className="w-3 h-3 animate-spin text-cyan-400" />}
+              <div className="flex items-center gap-2 text-xs text-muted">
+                {checkingStatus && <RefreshCw className="w-3 h-3 animate-spin text-accent" />}
                 <span>{checkingStatus ? '正在检测在线状态' : '在线状态每 15 秒自动刷新'}</span>
               </div>
             )}
@@ -382,8 +379,8 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
 
           {/* Desktop Table View (>= sm) */}
           <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-800/60 text-slate-400 uppercase text-[10px] tracking-wider">
+            <table className="w-full text-left text-xs text-body">
+              <thead className="bg-inset text-muted text-[11px]">
                 <tr>
                   <th className="py-3 px-4 rounded-l-xl w-16 text-center">ID</th>
                   <th className="py-3 px-4">机器名称</th>
@@ -393,7 +390,7 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                   <th className="py-3 px-4 text-right rounded-r-xl">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-border">
                 {devices.map((device) => {
                   const isPveBound = pveBoundId === device.id
                   const isWaking = wakingId === device.id
@@ -401,31 +398,31 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                   return (
                     <tr
                       key={device.id}
-                      className="hover:bg-slate-800/40 transition-colors group"
+                      className="hover:bg-raised transition-colors group"
                     >
                       {/* Hardware Device ID */}
-                      <td className="py-4 px-4 text-center font-mono text-cyan-400 font-bold text-xs">
+                      <td className="py-4 px-4 text-center font-mono text-muted font-medium text-xs">
                         #{device.id}
                       </td>
 
                       {/* Machine Name */}
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                          <div className="w-9 h-9 rounded-lg bg-raised text-muted flex items-center justify-center shrink-0">
                             <Server className="w-4 h-4" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-white text-sm tracking-tight">
+                              <span className="font-semibold text-ink text-sm tracking-tight">
                                 {device.name}
                               </span>
                               {isPveBound && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-accent-soft text-accent border border-accent-border">
                                   PVE 绑定宿主机
                                 </span>
                               )}
                             </div>
-                            <span className="text-[11px] text-slate-500">
+                            <span className="text-[11px] text-muted">
                               局域网受控设备
                             </span>
                           </div>
@@ -434,18 +431,18 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
 
                       {/* MAC Address */}
                       <td className="py-4 px-4">
-                        <div className="inline-flex items-center gap-2 bg-slate-950/70 border border-slate-800/80 px-3 py-1.5 rounded-xl group/mac">
-                          <span className="font-mono font-bold text-cyan-300 text-xs tracking-wider">
+                        <div className="inline-flex items-center gap-2 bg-inset border border-border px-3 py-1.5 rounded-lg group/mac">
+                          <span className="font-mono font-medium text-body text-xs tracking-wider">
                             {device.mac}
                           </span>
                           <button
                             onClick={() => handleCopyMac(device.mac)}
-                            className="p-1 text-slate-400 hover:text-white rounded transition-colors cursor-pointer"
+                            className="p-1 text-muted hover:text-ink rounded transition-colors cursor-pointer"
                             title="复制 MAC 地址"
                             aria-label="复制 MAC 地址"
                           >
                             {copiedMac === device.mac ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <Check className="w-3.5 h-3.5 text-success" />
                             ) : (
                               <Copy className="w-3.5 h-3.5" />
                             )}
@@ -456,7 +453,7 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                       <td className="py-4 px-4">{renderDeviceStatus(device.id)}</td>
 
                       {/* Created Time */}
-                      <td className="py-4 px-4 font-mono text-slate-400 text-xs">
+                      <td className="py-4 px-4 font-mono text-muted text-xs">
                         {formatDate(device.createdAt)}
                       </td>
 
@@ -471,19 +468,19 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                                 ? '需先在设置中配置 WOL 控制参数'
                                 : `向 ${device.name} 发送唤醒指令`
                             }
-                            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-95 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all shadow-sm shadow-emerald-500/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-accent-soft hover:bg-raised active:translate-y-px text-accent border border-accent-border rounded-lg text-xs font-semibold transition-all shadow-panel disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                           >
                             {isWaking ? (
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin text-success" />
                             ) : (
-                              <Zap className="w-3.5 h-3.5 fill-emerald-400/20" />
+                              <Zap className="w-3.5 h-3.5" />
                             )}
                             <span>{isWaking ? '唤醒中...' : '开机唤醒'}</span>
                           </button>
 
                           <button
                             onClick={() => handleOpenEditModal(device)}
-                            className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-xl border border-transparent hover:border-slate-700 transition-colors cursor-pointer"
+                            className="p-2 text-muted hover:text-accent hover:bg-raised rounded-lg border border-transparent hover:border-border transition-colors cursor-pointer"
                             title="编辑设备"
                             aria-label="编辑设备"
                           >
@@ -492,7 +489,7 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
 
                           <button
                             onClick={() => handleDeleteDevice(device)}
-                            className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl border border-transparent hover:border-rose-500/20 transition-colors cursor-pointer"
+                            className="p-2 text-muted hover:text-danger hover:bg-danger-soft rounded-lg border border-transparent hover:border-danger-border transition-colors cursor-pointer"
                             title="删除设备"
                             aria-label="删除设备"
                           >
@@ -508,7 +505,7 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
           </div>
 
           {/* Mobile Card List View (< sm) */}
-          <div className="block sm:hidden divide-y divide-slate-800/80">
+          <div className="block sm:hidden divide-y divide-border">
             {devices.map((device) => {
               const isPveBound = pveBoundId === device.id
               const isWaking = wakingId === device.id
@@ -517,22 +514,22 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                 <div key={device.id} className="py-4 first:pt-0 last:pb-0 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                      <div className="w-9 h-9 rounded-lg bg-raised text-muted flex items-center justify-center shrink-0">
                         <Server className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-white text-sm">{device.name}</h4>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold bg-slate-800 text-cyan-400 border border-slate-700">
+                          <h4 className="font-semibold text-ink text-sm">{device.name}</h4>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-raised text-muted border border-border">
                             #{device.id}
                           </span>
                           {isPveBound && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-accent-soft text-accent border border-accent-border">
                               PVE 宿主机
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-slate-500 font-mono">
+                        <span className="text-[10px] text-muted font-mono">
                           添加于: {formatDate(device.createdAt)}
                         </span>
                       </div>
@@ -541,14 +538,14 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpenEditModal(device)}
-                        className="p-1.5 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-muted hover:text-accent hover:bg-raised rounded-lg transition-colors cursor-pointer"
                         title="编辑设备"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteDevice(device)}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-muted hover:text-danger hover:bg-danger-soft rounded-lg transition-colors cursor-pointer"
                         title="删除设备"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -556,23 +553,23 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-400">
+                  <div className="flex items-center justify-between text-xs text-muted">
                     <span>在线状态</span>
                     {renderDeviceStatus(device.id)}
                   </div>
 
                   {/* MAC Box */}
-                  <div className="flex items-center justify-between bg-slate-950/70 border border-slate-800 px-3 py-2 rounded-xl">
-                    <span className="font-mono text-xs text-cyan-300 font-bold tracking-wide">
+                  <div className="flex items-center justify-between bg-inset border border-border px-3 py-2 rounded-lg">
+                    <span className="font-mono text-xs text-body font-medium tracking-wide">
                       {device.mac}
                     </span>
                     <button
                       onClick={() => handleCopyMac(device.mac)}
-                      className="text-slate-400 hover:text-white p-1 cursor-pointer"
+                      className="text-muted hover:text-ink p-1 cursor-pointer"
                       title="复制 MAC 地址"
                     >
                       {copiedMac === device.mac ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <Check className="w-3.5 h-3.5 text-success" />
                       ) : (
                         <Copy className="w-3.5 h-3.5" />
                       )}
@@ -588,12 +585,12 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                         ? '需先在设置中配置 WOL 控制参数'
                         : `向 ${device.name} 发送唤醒指令`
                     }
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-95 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all shadow-sm shadow-emerald-500/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-accent-soft hover:bg-raised active:translate-y-px text-accent border border-accent-border rounded-lg text-xs font-semibold transition-all shadow-panel disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isWaking ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-success" />
                     ) : (
-                      <Zap className="w-3.5 h-3.5 fill-emerald-400/20" />
+                      <Zap className="w-3.5 h-3.5" />
                     )}
                     <span>{isWaking ? '正在唤醒...' : '开机唤醒 (Wake)'}</span>
                   </button>
@@ -605,38 +602,38 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
       )}
 
       {/* Guidelines / Tips Card */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 sm:p-6 shadow-lg">
-        <div className="flex items-center gap-2.5 mb-3 text-slate-300 font-semibold text-xs sm:text-sm">
-          <Info className="w-4 h-4 text-amber-400" />
+      <div className="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-panel">
+        <div className="flex items-center gap-2.5 mb-3 text-body font-semibold text-xs sm:text-sm">
+          <Info className="w-4 h-4 text-muted" />
           <span>网络唤醒使用指南与排查提示</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs text-slate-400 leading-relaxed">
-          <div className="bg-slate-950/40 border border-slate-800/60 rounded-2xl p-4">
-            <div className="font-semibold text-slate-200 mb-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs text-muted leading-relaxed">
+          <div className="bg-inset border border-border rounded-xl p-4">
+            <div className="font-semibold text-ink mb-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted" />
               BIOS / UEFI 唤醒支持
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-muted">
               目标物理主机需在 BIOS 中开启「Wake on LAN」、「PCI-E 设备唤醒」或「ACPI 网络开机」，并接通电源与物理有线网线。
             </p>
           </div>
-          <div className="bg-slate-950/40 border border-slate-800/60 rounded-2xl p-4">
-            <div className="font-semibold text-slate-200 mb-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+          <div className="bg-inset border border-border rounded-xl p-4">
+            <div className="font-semibold text-ink mb-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
               操作系统网卡配置
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-muted">
               Windows 系统需在网卡高级属性中勾选「允许此设备唤醒计算机」，并关闭系统的「快速启动」功能以保证关机后网卡保持微电待机。
             </p>
           </div>
-          <div className="bg-slate-950/40 border border-slate-800/60 rounded-2xl p-4">
-            <div className="font-semibold text-slate-200 mb-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <div className="bg-inset border border-border rounded-xl p-4">
+            <div className="font-semibold text-ink mb-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
               Webhook 唤醒与检测
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-muted">
               面板通过 GET 请求调用配置的唤醒与在线检测 Webhook，URL 中的{' '}
-              <code className="text-cyan-300 font-mono">&#123;mac&#125;</code>{' '}
+              <code className="text-accent font-mono">&#123;mac&#125;</code>{' '}
               会自动替换为目标设备的 MAC 地址。在线状态以检测 Webhook 返回的结果为准。
             </p>
           </div>
@@ -645,36 +642,36 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
 
       {/* Add / Edit Device Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm animate-in fade-in duration-200">
           <div
             className="fixed inset-0"
             onClick={() => !submitting && setIsModalOpen(false)}
           />
-          <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-200 z-10">
+          <div className="relative w-full max-w-md bg-surface border border-border rounded-2xl p-6 sm:p-7 shadow-float animate-in zoom-in-95 duration-200 z-10">
             <button
               onClick={() => !submitting && setIsModalOpen(false)}
-              className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              className="absolute top-5 right-5 p-1.5 text-muted hover:text-ink hover:bg-raised rounded-lg transition-colors cursor-pointer"
               aria-label="关闭窗口"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="flex items-center gap-3 mb-5">
-              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+              <div className="p-3 rounded-xl bg-accent-soft text-accent">
                 <Zap className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">
+                <h3 className="text-base font-semibold text-ink">
                   {editingDevice ? '编辑 WOL 设备' : '新增 WOL 设备'}
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-muted">
                   设置机器名称与网卡物理 MAC 地址以支持网络唤醒
                 </p>
               </div>
             </div>
 
             {formError && (
-              <div className="mb-4 p-3.5 bg-rose-500/10 border border-rose-500/25 rounded-2xl text-rose-400 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3.5 bg-danger-soft border border-danger-border rounded-xl text-danger text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{formError}</span>
               </div>
@@ -682,8 +679,8 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
 
             <form onSubmit={handleSaveDevice} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  机器名称 <span className="text-rose-400">*</span>
+                <label className="block text-xs font-semibold text-body mb-1.5">
+                  机器名称 <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
@@ -691,13 +688,13 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                   onChange={(e) => setDeviceName(e.target.value)}
                   placeholder="例如: PVE 宿主机 / 客厅 NAS / 主力工作站"
                   required
-                  className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full px-4 py-2.5 bg-field border border-border-strong rounded-lg text-ink text-sm focus:outline-none focus:border-warning-border transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  机器 MAC 地址 <span className="text-rose-400">*</span>
+                <label className="block text-xs font-semibold text-body mb-1.5">
+                  机器 MAC 地址 <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
@@ -705,26 +702,26 @@ export const WOLControlPage: React.FC<WOLControlPageProps> = ({ onNavigateToSett
                   onChange={(e) => setDeviceMac(e.target.value)}
                   placeholder="例如: 00:11:22:33:44:55 或 AA-BB-CC-DD-EE-FF"
                   required
-                  className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 font-mono tracking-wider transition-colors"
+                  className="w-full px-4 py-2.5 bg-field border border-border-strong rounded-lg text-ink text-sm focus:outline-none focus:border-warning-border font-mono tracking-wider transition-colors"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">
+                <p className="text-[11px] text-muted mt-1">
                   12 位十六进制物理地址，支持冒号或短横线分隔
                 </p>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800 mt-6">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border mt-6">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   disabled={submitting}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-raised hover:bg-raised-strong text-body rounded-lg text-xs font-semibold border border-border transition-colors cursor-pointer"
                 >
                   取消
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 rounded-xl text-xs font-bold shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-xs font-semibold shadow-panel active:translate-y-px transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingDevice ? '保存修改' : '确认添加'}</span>

@@ -229,30 +229,34 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-200">
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="pb-1">
+        <h2 className="text-xl font-semibold text-ink">系统设置</h2>
+        <p className="mt-1 text-xs text-muted">管理服务连接、网络唤醒与登录凭证</p>
+      </div>
       {/* 1. PVE API Token Configuration */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+      <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-panel">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+          <div className="p-3 rounded-xl bg-accent-soft text-accent border border-accent-border">
             <Server className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Proxmox VE (PVE) 节点配置</h3>
-            <p className="text-xs text-slate-400">
+            <h3 className="text-lg font-semibold text-ink">Proxmox VE (PVE) 节点配置</h3>
+            <p className="text-xs text-muted">
               配置 PVE 服务器地址与 API Token，控制台将通过此凭证远程读取状态与下发指令
             </p>
           </div>
         </div>
 
         {pveError && (
-          <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs flex items-center gap-2">
+          <div className="mb-5 p-3.5 bg-danger-soft border border-danger-border rounded-xl text-danger text-xs flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span>{pveError}</span>
           </div>
         )}
 
         {pveTestSuccess && (
-          <div className="mb-5 p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs flex items-center gap-2">
+          <div className="mb-5 p-3.5 bg-success-soft border border-success-border rounded-xl text-success text-xs flex items-center gap-2">
             <CheckCircle className="w-4 h-4 shrink-0" />
             <span>{pveTestSuccess}</span>
           </div>
@@ -260,7 +264,7 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
 
         <form onSubmit={handleSavePVE} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-body mb-1.5">
               PVE 服务地址 (Endpoint，含端口 8006)
             </label>
             <input
@@ -269,13 +273,13 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
               onChange={(e) => setPveEndpoint(e.target.value)}
               placeholder="https://192.168.1.100:8006"
               required
-              className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500 font-mono"
+              className="w-full px-4 py-2.5 bg-field border border-border-strong rounded-lg text-ink text-sm focus:outline-none focus:border-accent-border font-mono"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-body mb-1.5">
                 API Token ID (格式: 用户@域!标识符)
               </label>
               <input
@@ -284,12 +288,12 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
                 onChange={(e) => setPveTokenId(e.target.value)}
                 placeholder="root@pam!nas-panel"
                 required
-                className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full px-4 py-2.5 bg-field border border-border-strong rounded-lg text-ink text-sm focus:outline-none focus:border-accent-border font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-body mb-1.5">
                 Token Secret (UUID 密匙)
               </label>
               <input
@@ -297,20 +301,20 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
                 value={pveTokenSecret}
                 onChange={(e) => setPveTokenSecret(e.target.value)}
                 placeholder="••••••••••••••••••••••••"
-                className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full px-4 py-2.5 bg-field border border-border-strong rounded-lg text-ink text-sm focus:outline-none focus:border-accent-border font-mono"
               />
             </div>
           </div>
 
           {/* Bound WOL Device Selection */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-body mb-1.5">
               WOL 绑定设备 (唤醒 PVE 宿主机所使用的 MAC 地址)
             </label>
             <select
               value={pveWolDeviceId ?? ''}
               onChange={(e) => setPveWolDeviceId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500"
+              className="w-full px-4 py-2.5 bg-field border border-border-strong rounded-lg text-ink text-sm focus:outline-none focus:border-accent-border"
             >
               <option value="">未绑定设备 (请在 WOL 设备中选择)</option>
               {wolDevices.map((d) => (
@@ -320,53 +324,53 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
               ))}
             </select>
             {wolDevices.length === 0 ? (
-              <p className="text-[11px] text-amber-400 mt-1">
+              <p className="text-[11px] text-warning mt-1">
                 暂无可绑定的 WOL 设备，请在「WOL Control」页面中先添加机器。
               </p>
             ) : (
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-muted mt-1">
                 设置绑定后，PVE 状态页的“开机 (WOL)”将直接下发此设备的物理 MAC 地址进行网络唤醒。
               </p>
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-800/50 rounded-2xl border border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-raised rounded-xl border border-border">
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
                 id="pveInsecureSSL"
                 checked={pveInsecure}
                 onChange={(e) => setPveInsecure(e.target.checked)}
-                className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 cursor-pointer"
+                className="rounded border-border text-accent focus:ring-accent w-4 h-4 cursor-pointer"
               />
-              <label htmlFor="pveInsecureSSL" className="text-xs text-slate-300 cursor-pointer">
+              <label htmlFor="pveInsecureSSL" className="text-xs text-body cursor-pointer">
                 允许自签名证书 (Insecure TLS，PVE 默认自签推荐勾选)
               </label>
             </div>
 
             {detectedNode && (
-              <div className="text-xs text-cyan-400 font-mono flex items-center gap-1.5">
-                <span className="text-slate-400 font-sans">API 自动识别主节点:</span>
-                <span className="font-bold px-2 py-0.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+              <div className="text-xs text-accent font-mono flex items-center gap-1.5">
+                <span className="text-muted font-sans">API 自动识别主节点:</span>
+                <span className="font-semibold px-2 py-0.5 rounded-lg bg-accent-soft border border-accent-border">
                   {detectedNode}
                 </span>
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
             <button
               type="button"
               onClick={handleTestPVE}
               disabled={pveLoading}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+              className="px-4 py-2 bg-raised hover:bg-raised-strong text-ink rounded-lg text-xs font-semibold border border-border transition-colors cursor-pointer"
             >
               测试连接
             </button>
             <button
               type="submit"
               disabled={pveLoading}
-              className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20 active:scale-95 transition-all cursor-pointer"
+              className="px-5 py-2 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-xs font-semibold shadow-panel active:translate-y-px transition-all cursor-pointer"
             >
               保存 PVE 配置
             </button>
@@ -375,15 +379,15 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
       </div>
 
       {/* 2. WOL Control Configuration (Wake-on-LAN) */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+      <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-panel">
         <div className="flex items-center justify-between gap-3 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <div className="p-3 rounded-xl bg-accent-soft text-accent">
               <Zap className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">WOL Control 配置 (Wake-on-LAN)</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <h3 className="text-lg font-semibold text-ink">WOL Control 配置 (Wake-on-LAN)</h3>
+              <p className="text-xs text-muted mt-0.5">
                 配置局域网唤醒与在线检测的 GET Webhook URL
               </p>
             </div>
@@ -393,13 +397,13 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
             <span
               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
                 wolConfig?.configured
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : 'bg-slate-800 text-slate-400 border border-slate-700'
+                  ? 'bg-success-soft text-success border border-success-border'
+                  : 'bg-raised text-muted border border-border'
               }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  wolConfig?.configured ? 'bg-emerald-400' : 'bg-slate-500'
+                  wolConfig?.configured ? 'bg-success' : 'bg-muted'
                 }`}
               />
               {wolConfig?.configured ? '已配置' : '未配置'}
@@ -408,14 +412,14 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
         </div>
 
         {wolError && (
-          <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs flex items-center gap-2">
+          <div className="mb-5 p-3.5 bg-danger-soft border border-danger-border rounded-xl text-danger text-xs flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span>{wolError}</span>
           </div>
         )}
 
         {wolSuccess && (
-          <div className="mb-5 p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs flex items-center gap-2">
+          <div className="mb-5 p-3.5 bg-success-soft border border-success-border rounded-xl text-success text-xs flex items-center gap-2">
             <CheckCircle className="w-4 h-4 shrink-0" />
             <span>{wolSuccess}</span>
           </div>
@@ -423,8 +427,8 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
 
         <form onSubmit={handleSaveWol} className="space-y-4">
           <div>
-            <label htmlFor="wolWakeUrl" className="block text-xs font-semibold text-slate-300 mb-1.5">
-              唤醒 URL <span className="text-rose-400">*</span>
+            <label htmlFor="wolWakeUrl" className="block text-xs font-semibold text-body mb-1.5">
+              唤醒 URL <span className="text-danger">*</span>
             </label>
             <input
               id="wolWakeUrl"
@@ -437,13 +441,13 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
               }}
               placeholder="http://router.lan:57820/wakeup?token=YOUR_TOKEN&mac={mac}"
               required
-              className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
+              className="w-full px-4 py-2.5 bg-field border border-border-strong rounded-lg text-ink text-sm focus:outline-none focus:border-accent-border font-mono"
             />
           </div>
 
           <div>
-            <label htmlFor="wolStatusUrl" className="block text-xs font-semibold text-slate-300 mb-1.5">
-              在线检测 URL <span className="text-rose-400">*</span>
+            <label htmlFor="wolStatusUrl" className="block text-xs font-semibold text-body mb-1.5">
+              在线检测 URL <span className="text-danger">*</span>
             </label>
             <input
               id="wolStatusUrl"
@@ -456,11 +460,11 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
               }}
               placeholder="http://router.lan:57820/wakeup?token=YOUR_TOKEN&checkOnline={mac}"
               required
-              className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 font-mono"
+              className="w-full px-4 py-2.5 bg-field border border-border-strong rounded-lg text-ink text-sm focus:outline-none focus:border-accent-border font-mono"
             />
           </div>
 
-          <div className="flex items-center gap-2 p-3.5 bg-slate-800/50 rounded-2xl border border-slate-800">
+          <div className="flex items-center gap-2 p-3.5 bg-raised rounded-xl border border-border">
             <input
               type="checkbox"
               id="wolTlsSkipVerify"
@@ -470,32 +474,32 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
                 setWolSuccess('')
                 setWolError('')
               }}
-              className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+              className="rounded border-border text-accent focus:ring-accent w-4 h-4 cursor-pointer"
             />
-            <label htmlFor="wolTlsSkipVerify" className="text-xs text-slate-300 cursor-pointer">
+            <label htmlFor="wolTlsSkipVerify" className="text-xs text-body cursor-pointer">
               允许跳过 TLS 证书校验（用于自签名证书，对两个 HTTPS Webhook 均生效）
             </label>
           </div>
 
-          <div className="space-y-1.5 p-3.5 bg-slate-800/50 rounded-2xl border border-slate-800 text-xs text-slate-400">
+          <div className="space-y-1.5 p-3.5 bg-raised rounded-xl border border-border text-xs text-muted">
             <p>
               两个 Webhook 均使用 GET 请求，每项填写一个完整的 HTTP/HTTPS URL，必须包含{' '}
-              <code className="text-amber-400">{'{mac}'}</code> 占位符，后端会将其替换为设备的 MAC 地址。
+              <code className="text-accent">{'{mac}'}</code> 占位符，后端会将其替换为设备的 MAC 地址。
               是否使用 TLS 由 URL 协议决定。
             </p>
             <p>
-              在线检测接口应返回 JSON：<code className="text-slate-300">{'{"success":true,"online":true}'}</code>，
-              <code className="text-slate-300">online</code> 为 <code className="text-slate-300">false</code> 表示离线。
+              在线检测接口应返回 JSON：<code className="text-body">{'{"success":true,"online":true}'}</code>，
+              <code className="text-body">online</code> 为 <code className="text-body">false</code> 表示离线。
             </p>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
             {wolConfig?.configured && (
               <button
                 type="button"
                 onClick={handleDeleteWol}
                 disabled={wolLoading}
-                className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 rounded-xl text-xs font-semibold active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-2 bg-danger-soft hover:bg-danger-soft text-danger border border-danger-border rounded-lg text-xs font-semibold active:translate-y-px transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>删除配置</span>
@@ -504,7 +508,7 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
             <button
               type="submit"
               disabled={wolLoading}
-              className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 rounded-xl text-xs font-bold shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              className="px-5 py-2 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-xs font-semibold shadow-panel active:translate-y-px transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
             >
               {wolLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
               <span>保存 WOL 配置</span>
@@ -514,28 +518,28 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
       </div>
 
       {/* 3. Passkey & Security */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+      <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-panel">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <div className="p-3 rounded-xl bg-accent-soft text-accent">
             <Fingerprint className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">通行密钥 (Passkey) 管理</h3>
-            <p className="text-xs text-slate-400">
+            <h3 className="text-lg font-semibold text-ink">通行密钥 (Passkey) 管理</h3>
+            <p className="text-xs text-muted">
               通过系统级生物识别（Touch ID、Face ID 或 Windows Hello）安全无密登录控制面板
             </p>
           </div>
         </div>
 
         {passkeyErr && (
-          <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs flex items-center gap-2">
+          <div className="mb-5 p-3.5 bg-danger-soft border border-danger-border rounded-xl text-danger text-xs flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span>{passkeyErr}</span>
           </div>
         )}
 
         {passkeyMsg && (
-          <div className="mb-5 p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs flex items-center gap-2">
+          <div className="mb-5 p-3.5 bg-success-soft border border-success-border rounded-xl text-success text-xs flex items-center gap-2">
             <CheckCircle className="w-4 h-4 shrink-0" />
             <span>{passkeyMsg}</span>
           </div>
@@ -548,12 +552,12 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
               value={newPasskeyName}
               onChange={(e) => setNewPasskeyName(e.target.value)}
               placeholder="自定义凭证名称 (例如: MacBook Pro 指纹)"
-              className="flex-1 px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500"
+              className="flex-1 px-4 py-2.5 bg-field border border-border-strong rounded-lg text-ink text-sm focus:outline-none focus:border-accent"
             />
             <button
               onClick={handleEnrollPasskey}
               disabled={passkeyLoading}
-              className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-xs font-semibold shadow-panel active:translate-y-px transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Fingerprint className="w-4 h-4" />
               <span>{passkeyLoading ? '正在唤起验证...' : '注册新 Passkey'}</span>
@@ -561,22 +565,22 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
           </div>
 
           {/* Bound Passkeys List */}
-          <div className="pt-4 border-t border-slate-800/80">
-            <h4 className="text-xs font-semibold text-slate-400 mb-3">已绑定的通行密钥</h4>
+          <div className="pt-4 border-t border-border">
+            <h4 className="text-xs font-semibold text-muted mb-3">已绑定的通行密钥</h4>
             {user?.passkeys && user.passkeys.length > 0 ? (
               <div className="space-y-2.5">
                 {user.passkeys.map((pk) => (
                   <div
                     key={pk.id}
-                    className="flex items-center justify-between p-3.5 bg-slate-800/40 border border-slate-800 rounded-2xl"
+                    className="flex items-center justify-between p-3.5 bg-raised border border-border rounded-xl"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
                         <Fingerprint className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-white">{pk.deviceName}</div>
-                        <div className="text-[10px] text-slate-500">
+                        <div className="text-xs font-semibold text-ink">{pk.deviceName}</div>
+                        <div className="text-[10px] text-muted">
                           注册时间: {new Date(pk.createdAt).toLocaleString()}
                         </div>
                       </div>
@@ -584,7 +588,7 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
 
                     <button
                       onClick={() => handleDeletePasskey(pk.id)}
-                      className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-muted hover:text-danger hover:bg-danger-soft rounded-lg transition-colors cursor-pointer"
                       title="删除此凭证"
                       aria-label="删除此凭证"
                     >
@@ -594,7 +598,7 @@ export const SettingPage: React.FC<SettingPageProps> = ({ user, onRefreshUser })
                 ))}
               </div>
             ) : (
-              <div className="text-xs text-slate-500 p-4 bg-slate-800/20 rounded-2xl text-center border border-slate-800/40">
+              <div className="text-xs text-muted p-4 bg-raised rounded-xl text-center border border-border">
                 尚未绑定通行密钥，建议添加当前设备以便快捷登录
               </div>
             )}

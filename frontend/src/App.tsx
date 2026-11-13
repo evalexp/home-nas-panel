@@ -41,9 +41,9 @@ export const App: React.FC = () => {
 
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
+      <div className="min-h-screen bg-canvas flex items-center justify-center text-muted">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-accent-border border-t-transparent rounded-full animate-spin" />
           <span className="text-xs">正在连接 NAS 面板...</span>
         </div>
       </div>
@@ -61,7 +61,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-white">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col">
       {/* Top Navbar with PVE Status Badge in the Top Right */}
       <Navbar
         user={user}

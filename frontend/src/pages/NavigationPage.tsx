@@ -957,24 +957,24 @@ export const NavigationPage: React.FC = () => {
   const renderItemBadge = (item: NavItem) => {
     const customData = isCustomImageData(item.icon) ? item.icon : null
     const IconComp = ICON_MAP[item.icon] || Globe
-    const fallback = <IconComp className="w-7 h-7 sm:w-8 sm:h-8 pointer-events-none select-none" />
+    const fallback = <IconComp className="w-5 h-5 pointer-events-none select-none" />
 
     return (
-      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center group-hover:scale-105 group-hover:bg-cyan-500/20 transition-all overflow-hidden shrink-0 shadow-md shadow-cyan-500/5 p-2.5 pointer-events-none select-none">
+      <div className="w-8 h-8 rounded-lg bg-raised text-muted flex items-center justify-center group-hover:bg-surface transition-colors overflow-hidden shrink-0 p-1.5 pointer-events-none select-none">
         {item.iconId ? (
           <NavIconImage
             iconId={item.iconId}
             alt={item.title}
             refreshKey={iconRefreshKey}
             initialData={iconSeeds[item.iconId]}
-            className="w-full h-full object-contain drop-shadow-sm select-none pointer-events-none"
+            className="w-full h-full object-contain select-none pointer-events-none"
             fallback={fallback}
           />
         ) : customData ? (
           <img
             src={customData}
             alt={item.title}
-            className="w-full h-full object-contain drop-shadow-sm select-none pointer-events-none"
+            className="w-full h-full object-contain select-none pointer-events-none"
             draggable={false}
             loading="lazy"
           />
@@ -987,17 +987,17 @@ export const NavigationPage: React.FC = () => {
   const renderModalPreviewIcon = () => {
     const IconComp = ICON_MAP[selectedPresetIcon] || Globe
     return (
-      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center overflow-hidden shrink-0 shadow-md shadow-cyan-500/5 p-2.5">
+      <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-lg bg-raised text-muted flex items-center justify-center overflow-hidden shrink-0 shadow-panel p-2.5">
         {selectedIconId ? (
           <NavIconImage
             iconId={selectedIconId}
             alt="图标预览"
             refreshKey={iconRefreshKey}
             initialData={iconSeeds[selectedIconId]}
-            className="w-full h-full object-contain drop-shadow-sm select-none"
-            fallback={<Globe className="w-7 h-7 sm:w-8 sm:h-8" />}
+            className="w-full h-full object-contain select-none"
+            fallback={<Globe className="w-6 h-6 sm:w-7 sm:h-7" />}
           />
-        ) : <IconComp className="w-7 h-7 sm:w-8 sm:h-8" />}
+        ) : <IconComp className="w-6 h-6 sm:w-7 sm:h-7" />}
       </div>
     )
   }
@@ -1007,22 +1007,23 @@ export const NavigationPage: React.FC = () => {
       {/* Top Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Compass className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-xl font-semibold text-ink flex items-center gap-2">
+            <Compass className="w-5 h-5 text-accent" />
             <span>导航中心</span>
           </h2>
+          <p className="mt-1.5 text-xs text-muted">常用服务，触手可及</p>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Search box */}
           <div className="relative flex-1 min-w-0 sm:flex-none">
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-2.5" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="搜索服务或分类..."
-              className="pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 w-full min-w-0 sm:w-52"
+              className="pl-8 pr-3 py-1.5 bg-field border border-border-strong rounded-lg text-xs text-ink placeholder-muted focus:outline-none focus:border-accent-border w-full min-w-0 sm:w-52"
             />
           </div>
 
@@ -1033,14 +1034,14 @@ export const NavigationPage: React.FC = () => {
             title="刷新导航"
             aria-label="刷新导航"
             aria-busy={loading}
-            className="flex items-center justify-center w-8 h-8 shrink-0 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg border border-border bg-surface text-muted hover:text-accent hover:border-accent-border transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
           <button
             onClick={() => handleOpenAdd()}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-cyan-500/15 active:scale-95 cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-xs font-semibold shadow-panel active:translate-y-px cursor-pointer whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>添加书签</span>
@@ -1049,7 +1050,7 @@ export const NavigationPage: React.FC = () => {
       </div>
 
       {loadError && (
-        <div role="alert" className="flex items-center gap-2 p-3 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400 text-xs">
+        <div role="alert" className="flex items-center gap-2 p-3 rounded-lg border border-danger-border bg-danger-soft text-danger text-xs">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           <span>{loadError}</span>
         </div>
@@ -1057,29 +1058,29 @@ export const NavigationPage: React.FC = () => {
 
       {/* Main Content: Grouped by Category (SunPanel Style) */}
       {loading && items.length === 0 ? (
-        <div role="status" className="p-12 text-center text-xs text-slate-400">正在加载导航服务...</div>
+        <div role="status" className="p-12 text-center text-xs text-muted">正在加载导航服务...</div>
       ) : loadError && items.length === 0 ? (
-        <div className="p-12 text-center text-xs text-slate-400">点击右上角刷新按钮重试</div>
+        <div className="p-12 text-center text-xs text-muted">点击右上角刷新按钮重试</div>
       ) : items.length === 0 ? (
         /* Empty Database State */
-        <div className="p-12 text-center rounded-3xl border border-dashed border-slate-800 bg-slate-900/40">
-          <p className="text-xs text-slate-400 mb-4">暂无导航服务，点击下方按钮添加属于你的家庭服务</p>
+        <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-surface">
+          <p className="text-xs text-muted mb-4">暂无导航服务，点击下方按钮添加属于你的家庭服务</p>
           <button
             onClick={() => handleOpenAdd()}
-            className="px-4 py-2 bg-cyan-500 text-slate-950 font-bold text-xs rounded-xl cursor-pointer"
+            className="px-4 py-2 bg-primary text-on-primary font-semibold text-xs rounded-lg cursor-pointer"
           >
             添加第一个服务书签
           </button>
         </div>
       ) : filteredItems.length === 0 ? (
         /* No Search Match State */
-        <div className="p-12 text-center rounded-3xl border border-dashed border-slate-800 bg-slate-900/40">
-          <p className="text-xs text-slate-400 mb-4">
-            未找到与「<span className="text-cyan-400">{search}</span>」匹配的导航服务
+        <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-surface">
+          <p className="text-xs text-muted mb-4">
+            未找到与「<span className="text-accent">{search}</span>」匹配的导航服务
           </p>
           <button
             onClick={() => setSearch('')}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs rounded-xl cursor-pointer"
+            className="px-4 py-2 bg-raised hover:bg-raised-strong text-ink font-medium text-xs rounded-lg cursor-pointer"
           >
             清空搜索关键词
           </button>
@@ -1113,7 +1114,7 @@ export const NavigationPage: React.FC = () => {
                 {draggedCategory &&
                   dragOverCategoryTarget?.name === catName &&
                   dragOverCategoryTarget.position === 'before' && (
-                    <div className="h-1 bg-cyan-400 rounded-full shadow-[0_0_12px_rgba(34,211,238,0.9)] animate-pulse pointer-events-none mb-3" />
+                    <div className="h-1 bg-primary rounded-full pointer-events-none mb-3" />
                   )}
 
                 {/* SunPanel Style Group Header Title */}
@@ -1127,9 +1128,9 @@ export const NavigationPage: React.FC = () => {
                     if (draggedCategory) return
                     handleDropOnCategory(e, catName)
                   }}
-                  className={`flex items-center justify-between pb-1 p-1.5 -m-1.5 rounded-2xl transition-colors ${
+                  className={`flex items-center justify-between pb-1 p-1.5 -m-1.5 rounded-xl transition-colors ${
                     draggedItem && dragOverCategory === catName && draggedItem?.category !== catName
-                      ? 'bg-cyan-500/10 ring-1 ring-cyan-500/30'
+                      ? 'bg-accent-soft ring-1 ring-accent'
                       : ''
                   }`}
                 >
@@ -1147,16 +1148,16 @@ export const NavigationPage: React.FC = () => {
                       title={search.trim() ? undefined : `按住竖线拖动可调整「${catName}」分组顺序`}
                     >
                       <div
-                        className={`w-1.5 h-4.5 rounded-full bg-gradient-to-b from-cyan-400 to-blue-500 shadow-sm shadow-cyan-500/30 transition-all pointer-events-none ${
+                        className={`w-1.5 h-4.5 rounded-full bg-primary hover:bg-primary-hover transition-colors pointer-events-none ${
                           draggedCategory === catName
-                            ? 'scale-125 ring-2 ring-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.8)]'
-                            : 'hover:shadow-[0_0_8px_rgba(34,211,238,0.6)]'
+                            ? 'scale-125 ring-2 ring-accent '
+                            : ''
                         }`}
                       />
                     </div>
-                    <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-ink tracking-tight flex items-center gap-2">
                       <span>{catName}</span>
-                      <span className="text-[11px] font-mono font-medium text-slate-400 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800">
+                      <span className="text-[11px] font-mono font-medium text-muted px-2 py-0.5 rounded-full bg-surface border border-border">
                         {groupList.length}
                       </span>
                     </h3>
@@ -1164,13 +1165,13 @@ export const NavigationPage: React.FC = () => {
 
                   <div className="flex items-center gap-3">
                     {/* Decorative subtle separator line */}
-                    <div className="hidden sm:block w-24 md:w-48 h-px bg-gradient-to-r from-slate-800/80 to-transparent" />
+                    <div className="hidden sm:block w-24 md:w-48 h-px bg-border" />
 
                     {/* Quick Add into this group */}
                     <button
                       type="button"
                       onClick={() => handleOpenAdd(catName)}
-                      className="flex items-center gap-1 px-2.5 py-1 text-slate-400 hover:text-cyan-400 hover:bg-slate-800/80 rounded-xl text-xs transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1 text-muted hover:text-accent hover:bg-raised rounded-lg text-xs transition-colors cursor-pointer"
                       title={`在此分组「${catName}」中添加新书签`}
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -1189,9 +1190,9 @@ export const NavigationPage: React.FC = () => {
                     if (draggedCategory) return
                     handleDropOnCategory(e, catName)
                   }}
-                  className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4 p-2 -m-2 rounded-3xl transition-all duration-200 min-h-[50px] ${
+                  className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4 p-2 -m-2 rounded-2xl transition-all duration-200 min-h-[50px] ${
                     draggedItem && dragOverCategory === catName && draggedItem?.category !== catName
-                      ? 'bg-cyan-500/[0.04] ring-1 ring-cyan-500/20'
+                      ? 'bg-accent-soft ring-1 ring-accent'
                       : ''
                   }`}
                 >
@@ -1203,7 +1204,7 @@ export const NavigationPage: React.FC = () => {
                       <div key={item.id} className="relative">
                         {/* Drop before indicator line */}
                         {isDragTarget && dragOverItem.position === 'before' && (
-                          <div className="absolute -left-2 top-1 bottom-1 w-1 bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-pulse z-30 pointer-events-none" />
+                          <div className="absolute -left-2 top-1 bottom-1 w-1 bg-primary rounded-full z-30 pointer-events-none" />
                         )}
 
                         <div
@@ -1216,14 +1217,14 @@ export const NavigationPage: React.FC = () => {
                           onAuxClick={(e) => handleCardAuxClick(e, item)}
                           onKeyDown={(e) => handleCardKeyDown(e, item)}
                           onContextMenu={(e) => handleContextMenu(e, item)}
-                          className={`group relative p-3.5 sm:p-4 bg-slate-900/80 hover:bg-slate-800/90 border rounded-2xl sm:rounded-3xl transition-all duration-200 flex items-center gap-3.5 sm:gap-4 shadow-lg shadow-black/20 select-none outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 cursor-pointer hover:-translate-y-0.5 hover:shadow-cyan-500/5 ${
+                          className={`nav-card group relative h-24 p-3 bg-surface hover:bg-accent-soft focus-visible:bg-accent-soft border transition-all duration-200 flex flex-col shadow-panel select-none outline-none focus-visible:ring-2 focus-visible:ring-accent cursor-pointer ${
                             isBeingDragged
-                              ? 'opacity-40 scale-[0.98] border-dashed border-cyan-400 bg-cyan-950/20 shadow-none'
+                              ? 'opacity-40 scale-[0.98] border-dashed border-accent-border bg-accent-soft shadow-none'
                               : isDragTarget
-                              ? 'border-cyan-400 ring-2 ring-cyan-400/40 bg-slate-800/90'
-                              : 'border-slate-800 hover:border-cyan-500/40'
+                              ? 'border-accent-border ring-2 ring-accent bg-raised'
+                              : 'border-border hover:border-accent-border'
                           }`}
-                          title={search.trim() ? '点击打开 • 右键呼出操作菜单' : '点击打开 • 右上角六点可拖拽排序 • 右键呼出操作菜单'}
+                          title={`${item.title}${item.description ? `\n${item.description}` : ''}\n\n${search.trim() ? '点击打开 • 右键呼出操作菜单' : '点击打开 • 右上角六点可拖拽排序 • 右键呼出操作菜单'}`}
                         >
                           {/* Grip drag handle icon (six dots handle in top right corner) */}
                           {!search.trim() && (
@@ -1236,30 +1237,27 @@ export const NavigationPage: React.FC = () => {
                                 e.stopPropagation()
                               }}
                               onMouseDown={(e) => e.stopPropagation()}
-                              className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 w-6 h-6 flex items-center justify-center rounded-lg text-slate-500 opacity-30 group-hover:opacity-80 hover:!opacity-100 hover:text-cyan-400 hover:bg-slate-800/80 cursor-grab active:cursor-grabbing transition-all z-10"
+                              className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 w-6 h-6 flex items-center justify-center rounded-lg text-muted opacity-30 group-hover:opacity-80 hover:!opacity-100 hover:text-accent hover:bg-raised cursor-grab active:cursor-grabbing transition-all z-10"
                               title="按住六点图标拖动可排序或跨分类移动"
                             >
                               <GripVertical className="w-3.5 h-3.5 pointer-events-none" />
                             </div>
                           )}
 
-                          {/* Left: Enlarged Icon Badge */}
-                          {renderItemBadge(item)}
-
-                          {/* Right: Service Title & Subtitle Description */}
-                          <div className="flex-1 min-w-0 pr-3 pointer-events-none select-none">
-                            <h4 className="font-bold text-slate-100 text-sm sm:text-base tracking-tight truncate group-hover:text-cyan-300 transition-colors">
+                          <div className="flex h-8 shrink-0 items-center gap-3 pr-6 pointer-events-none select-none">
+                            {renderItemBadge(item)}
+                            <h4 className="flex-1 min-w-0 font-semibold text-ink text-sm leading-5 tracking-tight truncate group-hover:text-accent transition-colors">
                               {item.title}
                             </h4>
-                            <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                              {item.description || '点击直达服务'}
-                            </p>
                           </div>
+                          <p className="mt-0.5 h-9 shrink-0 text-xs text-muted line-clamp-2 leading-[1.125rem] wrap-anywhere pointer-events-none select-none">
+                            {item.description || '点击直达服务'}
+                          </p>
                         </div>
 
                         {/* Drop after indicator line */}
                         {isDragTarget && dragOverItem.position === 'after' && (
-                          <div className="absolute -right-2 top-1 bottom-1 w-1 bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-pulse z-30 pointer-events-none" />
+                          <div className="absolute -right-2 top-1 bottom-1 w-1 bg-primary rounded-full z-30 pointer-events-none" />
                         )}
                       </div>
                     )
@@ -1270,7 +1268,7 @@ export const NavigationPage: React.FC = () => {
                 {draggedCategory &&
                   dragOverCategoryTarget?.name === catName &&
                   dragOverCategoryTarget.position === 'after' && (
-                    <div className="h-1 bg-cyan-400 rounded-full shadow-[0_0_12px_rgba(34,211,238,0.9)] animate-pulse pointer-events-none mt-3" />
+                    <div className="h-1 bg-primary rounded-full pointer-events-none mt-3" />
                   )}
               </section>
             )
@@ -1292,10 +1290,10 @@ export const NavigationPage: React.FC = () => {
 
           <div
             style={{ left: contextMenu.x, top: contextMenu.y }}
-            className="fixed z-50 w-44 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl shadow-2xl py-1.5 animate-in fade-in zoom-in-95 duration-100 select-none text-xs"
+            className="fixed z-50 w-44 bg-surface border border-border rounded-xl shadow-float py-1.5 animate-in fade-in zoom-in-95 duration-100 select-none text-xs"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-3.5 py-1.5 border-b border-slate-800 text-[10px] text-slate-400 truncate font-semibold">
+            <div className="px-3.5 py-1.5 border-b border-border text-[10px] text-muted truncate font-semibold">
               {contextMenu.item.title}
             </div>
 
@@ -1304,9 +1302,9 @@ export const NavigationPage: React.FC = () => {
               target="_blank"
               rel="noreferrer"
               onClick={() => setContextMenu(null)}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-body hover:text-ink hover:bg-raised transition-colors cursor-pointer"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+              <ExternalLink className="w-3.5 h-3.5 text-accent" />
               <span>在新标签页打开</span>
             </a>
 
@@ -1316,9 +1314,9 @@ export const NavigationPage: React.FC = () => {
                 navigator.clipboard.writeText(contextMenu.item.url)
                 setContextMenu(null)
               }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-body hover:text-ink hover:bg-raised transition-colors cursor-pointer"
             >
-              <Copy className="w-3.5 h-3.5 text-cyan-400" />
+              <Copy className="w-3.5 h-3.5 text-accent" />
               <span>复制链接地址</span>
             </button>
 
@@ -1329,9 +1327,9 @@ export const NavigationPage: React.FC = () => {
                 setContextMenu(null)
                 handleOpenEdit(targetItem)
               }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-slate-300 hover:text-cyan-300 hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-body hover:text-accent hover:bg-raised transition-colors cursor-pointer"
             >
-              <Edit2 className="w-3.5 h-3.5 text-cyan-400" />
+              <Edit2 className="w-3.5 h-3.5 text-accent" />
               <span>编辑服务书签</span>
             </button>
 
@@ -1342,7 +1340,7 @@ export const NavigationPage: React.FC = () => {
                 setContextMenu(null)
                 handleDeleteItem(e, targetId)
               }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-danger hover:bg-danger-soft transition-colors cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>删除此书签</span>
@@ -1353,55 +1351,55 @@ export const NavigationPage: React.FC = () => {
 
       {/* Add / Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm overflow-y-auto">
           <form
             onSubmit={handleSave}
-            className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 my-8"
+            className="w-full max-w-lg bg-surface border border-border rounded-2xl p-6 shadow-float space-y-4 animate-in fade-in zoom-in-95 my-8"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                <div className="p-2 rounded-lg bg-accent-soft text-accent border border-accent-border">
                   <Compass className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-bold text-white">
+                <h3 className="text-base font-semibold text-ink">
                   {editingItem ? '编辑服务书签' : '添加服务书签'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+                className="text-muted hover:text-ink p-1 rounded-lg cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Live Preview Card (Consistent with the new horizontal layout) */}
-            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl sm:rounded-3xl p-3.5 flex items-center gap-4">
+            <div className="bg-inset border border-border rounded-xl sm:rounded-2xl p-3.5 flex items-center gap-4">
               {renderModalPreviewIcon()}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm sm:text-base font-bold text-white truncate">
+                  <span className="text-sm sm:text-base font-semibold text-ink truncate">
                     {title || '服务标题预览'}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-raised text-muted border border-border">
                     {category || '常用'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 truncate mt-1">
+                <p className="text-xs text-muted truncate mt-1">
                   {description || url || '家庭服务简短说明'}
                 </p>
               </div>
-              <span className="text-[10px] text-cyan-400/80 font-mono px-2 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 shrink-0">
+              <span className="text-[10px] text-accent font-mono px-2 py-1 rounded-lg bg-accent-soft border border-accent-border shrink-0">
                 实时预览
               </span>
             </div>
 
             {/* Basic Info Inputs */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                服务标题 <span className="text-rose-400">*</span>
+              <label className="block text-xs font-semibold text-body mb-1">
+                服务标题 <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
@@ -1409,13 +1407,13 @@ export const NavigationPage: React.FC = () => {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="例如: Jellyfin、OpenWrt、qBittorrent"
                 required
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 bg-field border border-border-strong rounded-lg text-xs sm:text-sm text-ink focus:outline-none focus:border-accent-border"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                目标地址 (URL) <span className="text-rose-400">*</span>
+              <label className="block text-xs font-semibold text-body mb-1">
+                目标地址 (URL) <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
@@ -1423,23 +1421,23 @@ export const NavigationPage: React.FC = () => {
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="http://192.168.1.100:8096"
                 required
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs sm:text-sm text-white font-mono focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 bg-field border border-border-strong rounded-lg text-xs sm:text-sm text-ink font-mono focus:outline-none focus:border-accent-border"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">所属分组 / 分类</label>
+                <label className="block text-xs font-semibold text-body mb-1">所属分组 / 分类</label>
                 <input
                   type="text"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   placeholder="常用 / 媒体娱乐 / 网络路由"
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-field border border-border-strong rounded-lg text-xs sm:text-sm text-ink focus:outline-none focus:border-accent-border"
                 />
                 {categoryList.length > 0 && (
                   <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                    <span className="text-[10px] text-slate-500">已有分组:</span>
+                    <span className="text-[10px] text-muted">已有分组:</span>
                     {categoryList.map((catName) => (
                       <button
                         key={catName}
@@ -1447,8 +1445,8 @@ export const NavigationPage: React.FC = () => {
                         onClick={() => setCategory(catName)}
                         className={`px-2 py-0.5 rounded-lg text-[10px] transition-colors cursor-pointer ${
                           category === catName
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                            : 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                            ? 'bg-accent-soft text-accent border border-accent-border'
+                            : 'bg-raised hover:bg-raised-strong text-muted hover:text-ink border border-border'
                         }`}
                       >
                         {catName}
@@ -1458,13 +1456,13 @@ export const NavigationPage: React.FC = () => {
                 )}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">简短说明</label>
+                <label className="block text-xs font-semibold text-body mb-1">简短说明</label>
                 <input
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="家庭私人影视音视频中心"
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-field border border-border-strong rounded-lg text-xs sm:text-sm text-ink focus:outline-none focus:border-accent-border"
                 />
               </div>
             </div>
@@ -1472,17 +1470,17 @@ export const NavigationPage: React.FC = () => {
             {/* Icon Selection Section with Library Reuse */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-body">
                   图标选择与复用 (160×160 统一规格)
                 </label>
-                <div className="flex items-center p-0.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px]">
+                <div className="flex items-center p-0.5 rounded-lg bg-canvas border border-border text-[11px]">
                   <button
                     type="button"
                     onClick={() => setIconTab('preset')}
                     className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
                       iconTab === 'preset'
-                        ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-primary text-on-primary font-semibold shadow-panel'
+                        : 'text-muted hover:text-ink'
                     }`}
                   >
                     预设图标
@@ -1492,8 +1490,8 @@ export const NavigationPage: React.FC = () => {
                     onClick={() => setIconTab('library')}
                     className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
                       iconTab === 'library'
-                        ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-primary text-on-primary font-semibold shadow-panel'
+                        : 'text-muted hover:text-ink'
                     }`}
                   >
                     图标库{iconsLoaded ? ` (${customIcons.length})` : ''}
@@ -1503,8 +1501,8 @@ export const NavigationPage: React.FC = () => {
                     onClick={() => setIconTab('upload')}
                     className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
                       iconTab === 'upload'
-                        ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-primary text-on-primary font-semibold shadow-panel'
+                        : 'text-muted hover:text-ink'
                     }`}
                   >
                     本地上传
@@ -1514,8 +1512,8 @@ export const NavigationPage: React.FC = () => {
                     onClick={() => setIconTab('url')}
                     className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
                       iconTab === 'url'
-                        ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-primary text-on-primary font-semibold shadow-panel'
+                        : 'text-muted hover:text-ink'
                     }`}
                   >
                     URL 下载
@@ -1525,7 +1523,7 @@ export const NavigationPage: React.FC = () => {
 
               {iconTab === 'preset' && (
                 /* Preset Icons Grid */
-                <div className="grid grid-cols-6 gap-2 p-3 bg-slate-950/50 border border-slate-800 rounded-2xl max-h-48 overflow-y-auto">
+                <div className="grid grid-cols-6 gap-2 p-3 bg-inset border border-border rounded-xl max-h-48 overflow-y-auto">
                   {PRESET_ICONS.map((p) => {
                     const Comp = ICON_MAP[p.key] || Globe
                     const isSelected = selectedIconId === null && selectedPresetIcon === p.key
@@ -1537,10 +1535,10 @@ export const NavigationPage: React.FC = () => {
                           setSelectedPresetIcon(p.key)
                           setSelectedIconId(null)
                         }}
-                        className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer ${
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/60 ring-2 ring-cyan-500/20'
-                            : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800'
+                            ? 'bg-accent-soft text-accent border border-accent-border ring-2 ring-accent'
+                            : 'bg-raised text-muted hover:text-ink hover:bg-raised border border-border'
                         }`}
                         title={p.label}
                       >
@@ -1554,22 +1552,22 @@ export const NavigationPage: React.FC = () => {
 
               {iconTab === 'library' && (
                 /* Uploaded Icons Library (Select & Reuse) */
-                <div className="p-3 bg-slate-950/50 border border-slate-800 rounded-2xl max-h-56 overflow-y-auto">
+                <div className="p-3 bg-inset border border-border rounded-xl max-h-56 overflow-y-auto">
                   {iconsError && (
-                    <div role="alert" className="mb-3 text-xs text-rose-400 flex items-center justify-between gap-2">
+                    <div role="alert" className="mb-3 text-xs text-danger flex items-center justify-between gap-2">
                       <span>{iconsError}</span>
-                      <button type="button" onClick={() => setLibraryRetry((value) => value + 1)} className="text-cyan-400 cursor-pointer">重试</button>
+                      <button type="button" onClick={() => setLibraryRetry((value) => value + 1)} className="text-accent cursor-pointer">重试</button>
                     </div>
                   )}
-                  {iconsLoading && <p role="status" className="text-center py-3 text-xs text-slate-400">正在加载图标库...</p>}
+                  {iconsLoading && <p role="status" className="text-center py-3 text-xs text-muted">正在加载图标库...</p>}
                   {!iconsLoading && !iconsError && customIcons.length === 0 ? (
-                    <div className="text-center py-6 text-slate-500 text-xs space-y-2">
+                    <div className="text-center py-6 text-muted text-xs space-y-2">
                       <Library className="w-6 h-6 mx-auto opacity-50" />
                       <p>暂无已上传的自定义图标</p>
                       <button
                         type="button"
                         onClick={() => setIconTab('upload')}
-                        className="px-3 py-1.5 bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/25 rounded-xl text-xs font-semibold cursor-pointer"
+                        className="px-3 py-1.5 bg-accent-soft border border-accent-border text-accent hover:bg-accent-soft rounded-lg text-xs font-semibold cursor-pointer"
                       >
                         立即上传第一个图标
                       </button>
@@ -1585,34 +1583,34 @@ export const NavigationPage: React.FC = () => {
                               setSelectedIconId(ic.id)
                               setSelectedPresetIcon('')
                             }}
-                            className={`group relative flex items-center gap-2.5 p-2 rounded-2xl border transition-all cursor-pointer ${
+                            className={`group relative flex items-center gap-2.5 p-2 rounded-xl border transition-all cursor-pointer ${
                               isSelected
-                                ? 'bg-cyan-500/15 border-cyan-500/60 ring-2 ring-cyan-500/20'
-                                : 'bg-slate-900/80 hover:bg-slate-800 border-slate-800'
+                                ? 'bg-accent-soft border-accent-border ring-2 ring-accent'
+                                : 'bg-surface hover:bg-raised border-border'
                             }`}
                           >
-                            <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center overflow-hidden shrink-0">
+                            <div className="w-9 h-9 rounded-lg bg-raised border border-border flex items-center justify-center overflow-hidden shrink-0">
                               <NavIconImage
                                 iconId={ic.id}
                                 alt={ic.name}
                                 refreshKey={iconRefreshKey}
                                 initialData={iconSeeds[ic.id]}
                                 className="w-full h-full object-contain p-1"
-                                fallback={<ImageIcon className="w-4 h-4 text-slate-400" />}
+                                fallback={<ImageIcon className="w-4 h-4 text-muted" />}
                               />
                             </div>
 
                             <div className="flex-1 min-w-0 text-left">
-                              <div className="text-xs font-semibold text-slate-200 truncate">
+                              <div className="text-xs font-semibold text-ink truncate">
                                 {ic.name || `图标 #${ic.id}`}
                               </div>
-                              <div className="text-[10px] text-slate-500 font-mono">
+                              <div className="text-[10px] text-muted font-mono">
                                 ID: {ic.id}
                               </div>
                             </div>
 
                             {isSelected && (
-                              <div className="w-4 h-4 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center shrink-0">
+                              <div className="w-4 h-4 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0">
                                 <Check className="w-2.5 h-2.5 stroke-[3]" />
                               </div>
                             )}
@@ -1621,7 +1619,7 @@ export const NavigationPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={(e) => handleDeleteCustomIcon(e, ic.id)}
-                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-all cursor-pointer"
+                              className="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-danger rounded-lg hover:bg-danger-soft transition-all cursor-pointer"
                               title="删除此图标"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -1636,15 +1634,15 @@ export const NavigationPage: React.FC = () => {
 
               {iconTab === 'upload' && (
                 /* Custom Image Upload Zone */
-                <div className="p-4 bg-slate-950/50 border border-slate-800 rounded-2xl space-y-3">
+                <div className="p-4 bg-inset border border-border rounded-xl space-y-3">
                   <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-slate-300">图标名称备注:</label>
+                    <label className="text-xs font-medium text-body">图标名称备注:</label>
                     <input
                       type="text"
                       value={newIconName}
                       onChange={(e) => setNewIconName(e.target.value)}
                       placeholder={title || '如: Jellyfin Logo'}
-                      className="flex-1 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="flex-1 px-3 py-1.5 bg-field border border-border-strong rounded-lg text-xs text-ink focus:outline-none focus:border-accent-border"
                     />
                   </div>
 
@@ -1669,23 +1667,23 @@ export const NavigationPage: React.FC = () => {
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
                       dragOver
-                        ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300'
-                        : 'border-slate-700 hover:border-cyan-500/60 hover:bg-slate-800/40 text-slate-400'
+                        ? 'border-accent-border bg-accent-soft text-accent'
+                        : 'border-border hover:border-accent-border hover:bg-raised text-muted'
                     }`}
                   >
-                    <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center mx-auto mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-accent-soft text-accent border border-accent-border flex items-center justify-center mx-auto mb-2">
                       {uploadLoading ? (
-                        <div className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-accent-border border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <Upload className="w-5 h-5" />
                       )}
                     </div>
-                    <div className="text-xs font-semibold text-slate-200">
+                    <div className="text-xs font-semibold text-ink">
                       {uploadLoading ? '正在规格化并存入图标库...' : '点击或将图片拖拽至此上传'}
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-1">
+                    <p className="text-[10px] text-muted mt-1">
                       支持 PNG, JPG, WebP, SVG, ICO • 前端 Canvas 自动居中等比裁剪为 160×160 并存入独立图标库
                     </p>
                   </div>
@@ -1694,11 +1692,11 @@ export const NavigationPage: React.FC = () => {
 
               {iconTab === 'url' && (
                 /* Remote URL Icon Fetch & Preview Zone */
-                <div className="p-4 bg-slate-950/50 border border-slate-800 rounded-2xl space-y-4">
+                <div className="p-4 bg-inset border border-border rounded-xl space-y-4">
                   {!previewIcon ? (
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <label className="text-xs font-medium text-slate-300 shrink-0">图标 URL 地址:</label>
+                        <label className="text-xs font-medium text-body shrink-0">图标 URL 地址:</label>
                         <input
                           type="url"
                           value={iconFetchUrl}
@@ -1713,13 +1711,13 @@ export const NavigationPage: React.FC = () => {
                             }
                           }}
                           placeholder="https://... 或 http://... (支持 png, jpg, webp, svg, ico)"
-                          className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                          className="flex-1 px-3 py-2 bg-field border border-border-strong rounded-lg text-xs text-ink focus:outline-none focus:border-accent-border font-mono"
                         />
                         <button
                           type="button"
                           onClick={handleFetchIcon}
                           disabled={fetchLoading || !iconFetchUrl.trim()}
-                          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0 shadow-md shadow-cyan-600/20"
+                          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0 shadow-panel"
                         >
                           {fetchLoading ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1731,7 +1729,7 @@ export const NavigationPage: React.FC = () => {
                       </div>
 
                       {url.trim() && !iconFetchUrl && (
-                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                        <div className="flex items-center justify-between text-[11px] text-muted pt-1">
                           <span>尝试提取当前书签域名的 Favicon？</span>
                           <button
                             type="button"
@@ -1743,7 +1741,7 @@ export const NavigationPage: React.FC = () => {
                                 setIconFetchUrl(url.trim().replace(/\/+$/, '') + '/favicon.ico')
                               }
                             }}
-                            className="text-cyan-400 hover:text-cyan-300 hover:underline cursor-pointer"
+                            className="text-accent hover:text-accent hover:underline cursor-pointer"
                           >
                             填入书签 Favicon URL
                           </button>
@@ -1751,28 +1749,28 @@ export const NavigationPage: React.FC = () => {
                       )}
 
                       {fetchError && (
-                        <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs flex items-center gap-2">
+                        <div className="p-3 bg-danger-soft border border-danger-border rounded-lg text-danger text-xs flex items-center gap-2">
                           <AlertTriangle className="w-4 h-4 shrink-0" />
                           <span>{fetchError}</span>
                         </div>
                       )}
 
-                      <p className="text-[10px] text-slate-500 leading-relaxed">
+                      <p className="text-[10px] text-muted leading-relaxed">
                         💡 服务端直接代为发起网络请求，不受浏览器跨域 (CORS) 限制；原生支持局域网自签名 HTTPS 证书及公网图标。下载后将先展示预览，确认后再存入图标库。
                       </p>
                     </div>
                   ) : (
                     /* Preview and Decision Zone */
                     <div className="space-y-4 animate-in fade-in duration-200">
-                      <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                      <div className="text-xs font-semibold text-body flex items-center justify-between">
                         <span>图标预览 (尚未入库)</span>
-                        <span className="text-[11px] font-normal text-emerald-400 flex items-center gap-1">
+                        <span className="text-[11px] font-normal text-success flex items-center gap-1">
                           <Check className="w-3.5 h-3.5" /> 抓取成功，请确认是否入库
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-4 p-3.5 bg-slate-900 border border-slate-800 rounded-2xl">
-                        <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 p-2 flex items-center justify-center shrink-0 overflow-hidden shadow-inner">
+                      <div className="flex items-center gap-4 p-3.5 bg-surface border border-border rounded-xl">
+                        <div className="w-16 h-16 rounded-xl bg-accent-soft border border-accent-border p-2 flex items-center justify-center shrink-0 overflow-hidden shadow-inner">
                           <img
                             src={previewIcon.data}
                             alt="Preview"
@@ -1782,7 +1780,7 @@ export const NavigationPage: React.FC = () => {
 
                         <div className="flex-1 min-w-0 space-y-1.5">
                           <div className="flex items-center gap-2">
-                            <label className="text-[11px] text-slate-400 shrink-0">图标名称:</label>
+                            <label className="text-[11px] text-muted shrink-0">图标名称:</label>
                             <input
                               type="text"
                               value={previewIcon.suggestedName}
@@ -1790,11 +1788,11 @@ export const NavigationPage: React.FC = () => {
                                 setPreviewIcon((prev) => prev ? { ...prev, suggestedName: e.target.value } : null)
                               }
                               placeholder="给图标命名"
-                              className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-500"
+                              className="flex-1 px-2.5 py-1 bg-field border border-border-strong rounded-lg text-xs text-ink focus:outline-none focus:border-accent-border"
                             />
                           </div>
-                          <div className="text-[11px] text-slate-400 font-mono">
-                            格式: <span className="text-cyan-400">{previewIcon.mimeType}</span> • 大小: {Math.round((previewIcon.size / 1024) * 10) / 10} KB
+                          <div className="text-[11px] text-muted font-mono">
+                            格式: <span className="text-accent">{previewIcon.mimeType}</span> • 大小: {Math.round((previewIcon.size / 1024) * 10) / 10} KB
                           </div>
                         </div>
                       </div>
@@ -1807,7 +1805,7 @@ export const NavigationPage: React.FC = () => {
                             setFetchError('')
                           }}
                           disabled={saveFetchedLoading}
-                          className="px-3.5 py-1.5 rounded-xl border border-slate-700 text-xs font-medium text-slate-300 hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+                          className="px-3.5 py-1.5 rounded-lg border border-border text-xs font-medium text-body hover:bg-raised transition-colors cursor-pointer disabled:opacity-50"
                         >
                           重新输入 URL
                         </button>
@@ -1815,7 +1813,7 @@ export const NavigationPage: React.FC = () => {
                           type="button"
                           onClick={handleSavePreviewIcon}
                           disabled={saveFetchedLoading}
-                          className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-600/25 cursor-pointer disabled:opacity-50"
+                          className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary-hover text-on-primary rounded-lg text-xs font-semibold transition-all shadow-panel cursor-pointer disabled:opacity-50"
                         >
                           {saveFetchedLoading ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1832,18 +1830,18 @@ export const NavigationPage: React.FC = () => {
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-medium text-slate-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-lg border border-border text-xs font-medium text-body hover:bg-raised transition-colors cursor-pointer"
               >
                 取消
               </button>
               <button
                 type="submit"
                 disabled={uploadLoading}
-                className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl text-xs shadow-md shadow-cyan-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                className="px-5 py-2 bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-lg text-xs shadow-panel active:translate-y-px transition-all cursor-pointer disabled:opacity-50"
               >
                 保存书签
               </button>
