@@ -25,6 +25,7 @@ type navItemResponse struct {
 	ID          uint      `json:"id"`
 	Title       string    `json:"title"`
 	URL         string    `json:"url"`
+	InternalURL string    `json:"internalUrl"`
 	Icon        string    `json:"icon"`
 	IconID      *uint     `json:"iconId"`
 	Category    string    `json:"category"`
@@ -43,7 +44,7 @@ func (h *NavHandler) List(c *gin.Context) {
 	response := make([]navItemResponse, 0, len(items))
 	for _, item := range items {
 		response = append(response, navItemResponse{
-			ID: item.ID, Title: item.Title, URL: item.URL,
+			ID: item.ID, Title: item.Title, URL: item.URL, InternalURL: item.InternalURL,
 			Icon: item.Icon, IconID: item.IconID, Category: item.Category,
 			Description: item.Description, OrderIndex: item.OrderIndex,
 			CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt,

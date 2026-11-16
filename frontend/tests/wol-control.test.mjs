@@ -128,6 +128,10 @@ test('WOL status polling, refresh, wake, mobile display and webhook settings', {
     assert.equal(await page.getByText('HTTP 原始报文模板', { exact: false }).count(), 0)
     const wakeInput = page.getByLabel('唤醒 URL', { exact: false })
     const statusInput = page.getByLabel('在线检测 URL', { exact: false })
+    await page.waitForFunction(({ wakeUrl, statusUrl }) =>
+      document.querySelector('#wolWakeUrl')?.value === wakeUrl &&
+      document.querySelector('#wolStatusUrl')?.value === statusUrl,
+    config)
     await wakeInput.fill('ftp://router.test/wakeup?mac={mac}')
     await page.getByRole('button', { name: '保存 WOL 配置', exact: true }).click()
     await page.getByText('唤醒 URL 必须是以 http:// 或 https:// 开头的完整 URL', { exact: true }).waitFor()

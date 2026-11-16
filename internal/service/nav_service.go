@@ -31,6 +31,7 @@ func (s *NavService) ListItems() ([]model.NavItem, error) {
 }
 
 func (s *NavService) CreateItem(item *model.NavItem) error {
+	item.InternalURL = strings.TrimSpace(item.InternalURL)
 	if item.OrderIndex <= 0 {
 		var maxOrder int
 		db.DB.Model(&model.NavItem{}).Select("COALESCE(MAX(order_index), 0)").Scan(&maxOrder)
@@ -40,7 +41,8 @@ func (s *NavService) CreateItem(item *model.NavItem) error {
 }
 
 func (s *NavService) UpdateItem(item *model.NavItem) error {
-	fields := []string{"Title", "URL", "Icon", "IconID", "Category", "Description"}
+	item.InternalURL = strings.TrimSpace(item.InternalURL)
+	fields := []string{"Title", "URL", "InternalURL", "Icon", "IconID", "Category", "Description"}
 	if item.OrderIndex > 0 {
 		fields = append(fields, "OrderIndex")
 	}

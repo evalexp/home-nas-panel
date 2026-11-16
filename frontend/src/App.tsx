@@ -62,7 +62,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-canvas text-ink flex flex-col">
-      {/* Top Navbar with PVE Status Badge in the Top Right */}
+      {/* Top navigation and browser preferences */}
       <Navbar
         user={user}
         currentTab={currentTab}

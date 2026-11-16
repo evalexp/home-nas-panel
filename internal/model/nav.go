@@ -24,6 +24,7 @@ type NavItem struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
 	Title       string    `gorm:"not null" json:"title"`
 	URL         string    `gorm:"not null" json:"url"`
+	InternalURL string    `gorm:"type:text;default:''" json:"internalUrl"`
 	Icon        string    `json:"icon"`   // Lucide preset icon name e.g. "Globe", "Server"
 	IconID      *uint     `json:"iconId"` // Reference to reusable NavIcon
 	CustomIcon  *NavIcon  `gorm:"foreignKey:IconID" json:"customIcon,omitempty"`

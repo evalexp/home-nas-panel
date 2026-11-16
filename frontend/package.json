@@ -10,6 +10,7 @@
     "test:nav": "npm run build && node --test tests/navigation-cache.test.mjs",
     "test:wol": "npm run build && node --test tests/wol-control.test.mjs",
     "test:theme": "npm run build && node --test tests/theme.test.mjs",
+    "test:network": "npm run build && node --test tests/network-mode.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

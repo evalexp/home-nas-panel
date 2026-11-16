@@ -13,7 +13,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { User } from '../api/client'
-import { PVEStatusBadge } from './PVEStatusBadge'
+import { NetworkSwitch } from './NetworkSwitch'
 import { ThemeToggle } from './ThemeToggle'
 
 export type TabType = 'nav' | 'pve' | 'wol' | 'setting'
@@ -114,7 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           <div className="flex shrink-0 items-center gap-1 sm:gap-3">
-            <PVEStatusBadge />
+            <NetworkSwitch />
             <ThemeToggle />
 
             <div className="relative">

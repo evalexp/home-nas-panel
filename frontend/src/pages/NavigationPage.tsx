@@ -36,6 +36,7 @@ import {
   Copy,
 } from 'lucide-react'
 import { api, NavItem, NavIconMetadata } from '../api/client'
+import { resolveNavigationUrl, useNetworkMode } from '../networkMode'
 import { NavIconImage } from '../components/NavIconImage'
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -186,6 +187,7 @@ export const processDataUrlToSquare = (dataUrl: string, size = 160): Promise<str
 }
 
 export const NavigationPage: React.FC = () => {
+  const { networkMode } = useNetworkMode()
   const [items, setItems] = useState<NavItem[]>([])
   const [customIcons, setCustomIcons] = useState<NavIconMetadata[]>([])
   const [loading, setLoading] = useState(true)
@@ -206,6 +208,7 @@ export const NavigationPage: React.FC = () => {
   const [editingItem, setEditingItem] = useState<NavItem | null>(null)
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
+  const [internalUrl, setInternalUrl] = useState('')
   const [category, setCategory] = useState('常用')
   const [description, setDescription] = useState('')
 
@@ -360,6 +363,7 @@ export const NavigationPage: React.FC = () => {
     setEditingItem(null)
     setTitle('')
     setUrl('')
+    setInternalUrl('')
     setCategory(defaultCat || (categoryList[0] || '常用'))
     setDescription('')
     setSelectedPresetIcon('Globe')
@@ -376,6 +380,7 @@ export const NavigationPage: React.FC = () => {
     setEditingItem(item)
     setTitle(item.title)
     setUrl(item.url)
+    setInternalUrl(item.internalUrl || '')
     setCategory(item.category || '常用')
     setDescription(item.description || '')
     setNewIconName('')
@@ -544,6 +549,7 @@ export const NavigationPage: React.FC = () => {
       const payload: Partial<NavItem> = {
         title,
         url,
+        internalUrl: internalUrl.trim(),
         category: targetCategory,
         description,
         icon: selectedIconId ? '' : selectedPresetIcon || 'Globe',
@@ -642,27 +648,31 @@ export const NavigationPage: React.FC = () => {
   }
 
   // Card click & interaction handlers
+  const openItem = (item: NavItem) => {
+    window.open(resolveNavigationUrl(item, networkMode), '_blank', 'noopener,noreferrer')
+  }
+
   const handleCardClick = (e: React.MouseEvent, item: NavItem) => {
     if (isDraggingRef.current) {
       e.preventDefault()
       e.stopPropagation()
       return
     }
-    window.open(item.url, '_blank', 'noopener,noreferrer')
+    openItem(item)
   }
 
   const handleCardAuxClick = (e: React.MouseEvent, item: NavItem) => {
     // Middle mouse button click opens in new tab
     if (e.button === 1) {
       e.preventDefault()
-      window.open(item.url, '_blank', 'noopener,noreferrer')
+      openItem(item)
     }
   }
 
   const handleCardKeyDown = (e: React.KeyboardEvent, item: NavItem) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      window.open(item.url, '_blank', 'noopener,noreferrer')
+      openItem(item)
     }
   }
 
@@ -941,6 +951,7 @@ export const NavigationPage: React.FC = () => {
       item.title.toLowerCase().includes(term) ||
       item.description?.toLowerCase().includes(term) ||
       item.url.toLowerCase().includes(term) ||
+      (item.internalUrl || '').toLowerCase().includes(term) ||
       item.category?.toLowerCase().includes(term)
     )
   })
@@ -953,32 +964,34 @@ export const NavigationPage: React.FC = () => {
     return acc
   }, {})
 
-  // Helper to render the enlarged uniform icon badge for an item
+  // Match the title line, gap, and two reserved description lines.
   const renderItemBadge = (item: NavItem) => {
     const customData = isCustomImageData(item.icon) ? item.icon : null
     const IconComp = ICON_MAP[item.icon] || Globe
-    const fallback = <IconComp className="w-5 h-5 pointer-events-none select-none" />
+    const fallback = <IconComp className="w-full h-full pointer-events-none select-none" />
 
     return (
-      <div className="w-8 h-8 rounded-lg bg-raised text-muted flex items-center justify-center group-hover:bg-surface transition-colors overflow-hidden shrink-0 p-1.5 pointer-events-none select-none">
-        {item.iconId ? (
-          <NavIconImage
-            iconId={item.iconId}
-            alt={item.title}
-            refreshKey={iconRefreshKey}
-            initialData={iconSeeds[item.iconId]}
-            className="w-full h-full object-contain select-none pointer-events-none"
-            fallback={fallback}
-          />
-        ) : customData ? (
-          <img
-            src={customData}
-            alt={item.title}
-            className="w-full h-full object-contain select-none pointer-events-none"
-            draggable={false}
-            loading="lazy"
-          />
-        ) : fallback}
+      <div className="w-19 h-full flex items-center justify-center shrink-0 pointer-events-none select-none">
+        <div className="w-13 h-13 rounded-lg bg-raised text-muted flex items-center justify-center group-hover:bg-surface group-hover:text-accent transition-colors overflow-hidden">
+          {item.iconId ? (
+            <NavIconImage
+              iconId={item.iconId}
+              alt={item.title}
+              refreshKey={iconRefreshKey}
+              initialData={iconSeeds[item.iconId]}
+              className="w-full h-full object-contain select-none pointer-events-none"
+              fallback={fallback}
+            />
+          ) : customData ? (
+            <img
+              src={customData}
+              alt={item.title}
+              className="w-full h-full object-contain select-none pointer-events-none"
+              draggable={false}
+              loading="lazy"
+            />
+          ) : fallback}
+        </div>
       </div>
     )
   }
@@ -1011,7 +1024,7 @@ export const NavigationPage: React.FC = () => {
             <Compass className="w-5 h-5 text-accent" />
             <span>导航中心</span>
           </h2>
-          <p className="mt-1.5 text-xs text-muted">常用服务，触手可及</p>
+          <p className="mt-1.5 text-xs text-muted">{networkMode === 'internal' ? '优先使用内网地址，未填写时使用外网地址' : '当前使用外网地址'}</p>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -1106,7 +1119,7 @@ export const NavigationPage: React.FC = () => {
                     handleCategoryDropOnCategory(e, catName)
                   }
                 }}
-                className={`space-y-4 scroll-mt-20 transition-opacity ${
+                className={`flex flex-col gap-3 scroll-mt-20 transition-opacity ${
                   draggedCategory === catName ? 'opacity-40' : ''
                 }`}
               >
@@ -1128,7 +1141,7 @@ export const NavigationPage: React.FC = () => {
                     if (draggedCategory) return
                     handleDropOnCategory(e, catName)
                   }}
-                  className={`flex items-center justify-between pb-1 p-1.5 -m-1.5 rounded-xl transition-colors ${
+                  className={`flex items-center justify-between p-1.5 -m-1.5 rounded-xl transition-colors ${
                     draggedItem && dragOverCategory === catName && draggedItem?.category !== catName
                       ? 'bg-accent-soft ring-1 ring-accent'
                       : ''
@@ -1217,14 +1230,14 @@ export const NavigationPage: React.FC = () => {
                           onAuxClick={(e) => handleCardAuxClick(e, item)}
                           onKeyDown={(e) => handleCardKeyDown(e, item)}
                           onContextMenu={(e) => handleContextMenu(e, item)}
-                          className={`nav-card group relative h-24 p-3 bg-surface hover:bg-accent-soft focus-visible:bg-accent-soft border transition-all duration-200 flex flex-col shadow-panel select-none outline-none focus-visible:ring-2 focus-visible:ring-accent cursor-pointer ${
+                          className={`nav-card group relative h-20 overflow-hidden bg-surface hover:bg-accent-soft focus-visible:bg-accent-soft border transition-all duration-200 flex items-stretch shadow-panel select-none outline-none focus-visible:ring-2 focus-visible:ring-accent cursor-pointer ${
                             isBeingDragged
                               ? 'opacity-40 scale-[0.98] border-dashed border-accent-border bg-accent-soft shadow-none'
                               : isDragTarget
                               ? 'border-accent-border ring-2 ring-accent bg-raised'
                               : 'border-border hover:border-accent-border'
                           }`}
-                          title={`${item.title}${item.description ? `\n${item.description}` : ''}\n\n${search.trim() ? '点击打开 • 右键呼出操作菜单' : '点击打开 • 右上角六点可拖拽排序 • 右键呼出操作菜单'}`}
+                          title={`${item.title}\n${resolveNavigationUrl(item, networkMode)}${item.description ? `\n${item.description}` : ''}\n\n${search.trim() ? '点击打开 • 右键呼出操作菜单' : '点击打开 • 右上角六点可拖拽排序 • 右键呼出操作菜单'}`}
                         >
                           {/* Grip drag handle icon (six dots handle in top right corner) */}
                           {!search.trim() && (
@@ -1244,15 +1257,15 @@ export const NavigationPage: React.FC = () => {
                             </div>
                           )}
 
-                          <div className="flex h-8 shrink-0 items-center gap-3 pr-6 pointer-events-none select-none">
-                            {renderItemBadge(item)}
-                            <h4 className="flex-1 min-w-0 font-semibold text-ink text-sm leading-5 tracking-tight truncate group-hover:text-accent transition-colors">
+                          {renderItemBadge(item)}
+                          <div className="flex flex-1 min-w-0 flex-col justify-center py-3 pr-7 pointer-events-none select-none">
+                            <h4 className="font-semibold text-ink text-[13px] leading-[1.125rem] tracking-tight truncate group-hover:text-accent transition-colors">
                               {item.title}
                             </h4>
+                            <p className="mt-0.5 h-8 shrink-0 text-xs text-muted line-clamp-2 leading-4 wrap-anywhere">
+                              {item.description || '点击直达服务'}
+                            </p>
                           </div>
-                          <p className="mt-0.5 h-9 shrink-0 text-xs text-muted line-clamp-2 leading-[1.125rem] wrap-anywhere pointer-events-none select-none">
-                            {item.description || '点击直达服务'}
-                          </p>
                         </div>
 
                         {/* Drop after indicator line */}
@@ -1298,7 +1311,7 @@ export const NavigationPage: React.FC = () => {
             </div>
 
             <a
-              href={contextMenu.item.url}
+              href={resolveNavigationUrl(contextMenu.item, networkMode)}
               target="_blank"
               rel="noreferrer"
               onClick={() => setContextMenu(null)}
@@ -1311,7 +1324,7 @@ export const NavigationPage: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                navigator.clipboard.writeText(contextMenu.item.url)
+                navigator.clipboard.writeText(resolveNavigationUrl(contextMenu.item, networkMode))
                 setContextMenu(null)
               }}
               className="w-full flex items-center gap-2.5 px-3.5 py-2 text-body hover:text-ink hover:bg-raised transition-colors cursor-pointer"
@@ -1351,7 +1364,7 @@ export const NavigationPage: React.FC = () => {
 
       {/* Add / Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-overlay backdrop-blur-sm overflow-y-auto">
           <form
             onSubmit={handleSave}
             className="w-full max-w-lg bg-surface border border-border rounded-2xl p-6 shadow-float space-y-4 animate-in fade-in zoom-in-95 my-8"
@@ -1388,7 +1401,7 @@ export const NavigationPage: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-xs text-muted truncate mt-1">
-                  {description || url || '家庭服务简短说明'}
+                  {description || resolveNavigationUrl({ url, internalUrl }, networkMode) || '家庭服务简短说明'}
                 </p>
               </div>
               <span className="text-[10px] text-accent font-mono px-2 py-1 rounded-lg bg-accent-soft border border-accent-border shrink-0">
@@ -1412,17 +1425,34 @@ export const NavigationPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-body mb-1">
-                目标地址 (URL) <span className="text-danger">*</span>
+              <label htmlFor="nav-external-url" className="block text-xs font-semibold text-body mb-1">
+                外网地址（默认） <span className="text-danger">*</span>
               </label>
               <input
+                id="nav-external-url"
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="http://192.168.1.100:8096"
+                placeholder="https://jellyfin.example.com"
                 required
                 className="w-full px-3 py-2 bg-field border border-border-strong rounded-lg text-xs sm:text-sm text-ink font-mono focus:outline-none focus:border-accent-border"
               />
+            </div>
+
+            <div>
+              <label htmlFor="nav-internal-url" className="block text-xs font-semibold text-body mb-1">
+                内网地址 <span className="font-normal text-muted">（选填）</span>
+              </label>
+              <input
+                id="nav-internal-url"
+                type="text"
+                value={internalUrl}
+                onChange={(e) => setInternalUrl(e.target.value)}
+                placeholder="http://192.168.1.100:8096"
+                aria-describedby="nav-internal-url-help"
+                className="w-full px-3 py-2 bg-field border border-border-strong rounded-lg text-xs sm:text-sm text-ink font-mono focus:outline-none focus:border-accent-border"
+              />
+              <p id="nav-internal-url-help" className="mt-1 text-[11px] text-muted">切换到内网时优先使用此地址，留空则使用外网地址。</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
